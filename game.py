@@ -13,12 +13,14 @@ class Game(QWidget):
         super().__init__()
         self.initUI()
         self.setMouseTracking(True)
+        self.setMaximumSize(1600, 900)
         self.scene = scene
         self.show()
     
     def initUI(self):
-        self.resize(1920, 960)
+        self.resize(1600, 900)
         self.setWindowTitle('Young Rock')
+        self.setStyleSheet("background-color:rgb(150, 150, 150);");
 
     def paintEvent(self, event):
         qp = QPainter()
