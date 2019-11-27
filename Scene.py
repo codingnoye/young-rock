@@ -53,47 +53,109 @@ class TestScene(Scene):
         self.enemy = Player(self, (1050, 700), (100, 100))
         self.enemy.objid = self.addObject(self.enemy)
 
-        self.block = Block(self, (40, 40), [
+        self.shopping = True
+        self.shop = Shop(self)
+        self.shop.objid = self.addObject(self.shop)
+
+        self.scroll.addBlock(Block(self, (40, 40), [
+            ('for i in range(3):', 0),
+            ('attack(3)', 1),
+            ('player.health += 5', 0),
+            ('player.evade = 2', 0)
+            ]))
+
+        self.scroll.addBlock(Block(self, (40, 40), [
+            ('for i in range(2):', 0),
+            ('defence(4)', 1)
+            ]))
+        
+        self.enemyScroll.addBlock(Block(self, (40, 40), [
             ('for i in range(3):', 0),
             ('attack(3)', 1),
             ('player.health += 5', 0)
-            ])
-        self.block.objid = self.addObject(self.block)
-    
+            ]))
+
+        self.enemyScroll.addBlock(Block(self, (40, 40), [
+            ('for i in range(2):', 0),
+            ('attack(6)', 1)
+            ]))
+
+        self.goShopping()
+
+    def goShopping(self):
+        self.shopping = True
+        self.shopClock = Clock(self, (400, 50))
+        self.shopClockId = self.addObject(self.shopClock)
+        self.shop.nowMoney = self.shop.maxMoney
+        thread = threading.Thread(target=self.shoppingThread, args=())
+        thread.start()
+
+    # @thread
+    def shoppingThread(self):
+        starttime = time.time()
+        nowtime = time.time()
+        while nowtime - starttime < 15:
+            nowtime = time.time()
+            self.shopClock.time = int(15 - (nowtime - starttime))
+            time.sleep(0.2)
+        self.removeObject(self.shopClockId)
+        self.shopping = False
+        self.shop.resetButton.reset()
+        self.startBattle(True)
+
     def draw(self, ctx):
         super().draw(ctx)
         Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
+
+    def event(self, e):
+        super().event(e)
     
     def blockUse(self, block, isMine):
         execText = ''
         for line in block.code:
-            execText += '    '*line[1] + 'time.sleep(0.15)' + '\n'
+            execText += '    '*line[1] + 'time.sleep(0.4)' + '\n'
             execText += '    '*line[1] + line[0] + '\n'
-        thread = threading.Thread(target=self.sandbox, args=([self.player, self.enemy, execText] if isMine else [self.enemy, self.player, execText]))
-        thread.start()
+        
+        if isMine:
+            self.sandbox(self.player, self.enemy, execText)
+        else:
+            self.sandbox(self.enemy, self.player, execText)
 
     # @thread
     def sandbox(self, player, enemy, text):
         def attack(val):
             enemy.getAttacked(val)
         def defence(val):
-            enemy.getAttacked(val)
-        exec(text, globals(), locals())
+            player.shield += val
+        try:
+            exec(text, globals(), locals())
+        except SyntaxError:
+            pass
+
+    def startBattle(self, first):
+        thread = threading.Thread(target=self.battle, args=([first]))
+        thread.start()
 
     # @thread
     def battle(self, first):
         myturn = first
-        blocki = [-1, -1]
-        while blocki[0] < len(self.player.blocks) or blocki[1] < len(self.enemy.blocks):
+        blocki = [0, 0]
+        while blocki[0] < len(self.scroll.blocks) or blocki[1] < len(self.enemyScroll.blocks):
             player = self.player if myturn else self.enemy
+            scroll = self.scroll if myturn else self.enemyScroll
             pi = 0 if myturn else 1
 
             player.shield = 0
-            if blocki[pi] < len(player.blocks):
-                blocki[pi] += 1
+            player.evade = 0
+            if blocki[pi] < len(scroll.blocks):
                 i = blocki[pi]
-                player.nowblock = i
-                self.blockUse(player.blocks[i], myturn)
-                player.nowblock = None
+                scroll.nowblock = i
+                self.blockUse(scroll.blocks[i], myturn)
+                time.sleep(1)
+                scroll.nowblock = None
+
+            blocki[pi] += 1
             myturn = not myturn
-            
+        #battle end
+        self.goShopping()
+

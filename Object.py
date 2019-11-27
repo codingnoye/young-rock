@@ -52,15 +52,30 @@ class Player(Object):
         self._evade = 0
         self.effectOffset = (size[0]/2, 0)
         self.hpbar = HpDrawable(150, 30)
-        self.blocks = []
-        self.nowblock = None
+        self.alive = True
     
     def getAttacked(self, damage):
         if self._evade>0:
-            self.showEffect('evade', '회피함!')
-            self.evade -= 1
+            self.showEffect('evade', 'Evade!')
+            self._evade -= 1
         else:
-            self.health -= max(damage-self._armor, 0)
+            if self._shield >= damage:
+                self._shield -= damage
+                self.showEffect('defence', '-' + str(damage))
+            else:
+                if self._shield > 0:
+                    damage -= self._shield
+                    self._shield = 0
+                self.health -= max(damage-self._armor, 0)
+    @property
+    def evade(self):
+        return self._evade
+    @evade.setter
+    def evade(self, newval):
+        if newval>self._evade:
+            self.showEffect('evade', '+' + str(newval - self._evade))
+        self._evade = newval
+
     @property
     def health(self):
         return self._health
@@ -68,18 +83,27 @@ class Player(Object):
     @health.setter
     def health(self, newval):
         if newval>100: newval = 100
-        print(1)
         if newval<self._health:
-            print(2)
             self.showEffect('hurt', self._health - newval)
             self._health = newval
         elif newval>self._health:
-            print(3)
-            self.showEffect('heal', '+'+str(abs(self._health - newval)))
+            self.showEffect('heal', '+'+str(newval - self._health))
             self._health = newval
         else:
-            print(4)
             self.showEffect('nothing', 0)
+
+    @property
+    def shield(self):
+        return self._shield
+
+    @shield.setter
+    def shield(self, newval):
+        if newval<self._shield:
+            self.showEffect('defence', self._shield - newval)
+            self._shield = newval
+        elif newval>self._shield:
+            self.showEffect('defence', '+'+str(abs(self._shield - newval)))
+            self._shield = newval
 
     def showEffect(self, effect, text):
         if type(text) != str: text = str(text)
@@ -87,10 +111,13 @@ class Player(Object):
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(255, 40, 40), 48)
             dmg.objid = self.scene.addObject(dmg)
         elif effect == 'evade':
-            dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(150, 150, 150), 48)
+            dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(10, 10, 200), 24)
             dmg.objid = self.scene.addObject(dmg)
         elif effect == 'heal':
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(40, 255, 40), 48)
+            dmg.objid = self.scene.addObject(dmg)
+        elif effect == 'defence':
+            dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(200, 200, 200), 48)
             dmg.objid = self.scene.addObject(dmg)
         elif effect == 'nothing':
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(170, 170, 170), 48)
@@ -99,13 +126,30 @@ class Player(Object):
     def draw(self, ctx):
         super().draw(ctx)
         self.hpbar.draw(ctx, (self.location[0]+50-75, self.location[1]-70), (150*self.health/100, None))
-
-        
+        Text(str(self.health), QFont('D2Coding', 24), QColor(255, 255, 255)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-70+26))
+        if self._shield>0: Text('+'+str(self._shield), QFont('D2Coding', 24), QColor(200, 200, 200)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-70+26)) 
 
 class Scroll(Object):
     def __init__(self, scene,  location, size):
         super().__init__(scene, ScrollDrawable(), location, size)
         self.blocks = []
+        self.nowblock = None
+    
+    def addBlock(self, block):
+        block.makeCode()
+        self.blocks.append(block)
+
+    def draw(self, ctx):
+        super().draw(ctx)
+        i = 0
+        ystack = 0
+        for block in self.blocks:
+            block.location = (self.location[0] + 20, self.location[1] + 20 + ystack)
+            block.draw(ctx)
+            if i == self.nowblock:
+                block.drawWrap(ctx)
+            ystack += block.size[1] + 20
+            i += 1
 
 class Dmg(Object):
     def __init__(self, scene, location, text, color, size):
@@ -118,8 +162,8 @@ class Dmg(Object):
             self.scene.removeObject(self.objid)
 
 class Block(Object):
-    def __init__(self, scene,  location, code = []):
-        super().__init__(scene, CardDrawable(), location, (300, 180))
+    def __init__(self, scene, location, code = []):
+        super().__init__(scene, BlockDrawable(), location, (300, 180))
         self.code = code
         self.fontSize = 16
         self.lineSpace = 1.5
@@ -127,25 +171,25 @@ class Block(Object):
         
         self.makeCode()
 
-    def onPress(self):
-        super().onPress()
-        self.scene.blockUse(self, True)
-
     def draw(self, ctx):
         super().draw(ctx)
         i=0
         for text in self.text:
             Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
             i+=1
+    
+    def drawWrap(self, ctx):
+        self.drawable.drawWrap(ctx, self.location, self.size)
 
     def makeCode(self):
+        self.text = []
         for c in self.code:
             self.text += ['    ' * c[1] + c[0]]
         self.size = (self.size[0], 80-self.fontSize + (len(self.code)-1)*self.fontSize*self.lineSpace)
 
 class Card(Object):
     def __init__(self, scene,  location, size = (300, 90)):
-        super().__init__(scene, CardDrawable(), location, size)
+        super().__init__(scene, BlockDrawable(), location, size)
         self.tracking = False
         self.trackingXY = (0, 0)
         self.code = []
@@ -169,3 +213,203 @@ class Card(Object):
     def makeCode(self):
         for c in self.code:
             self.text += '    ' * c[1] + c[0] + '\n'
+
+class Shop(Object):
+    def __init__(self, scene, location = (1600, 0), size = (980, 900)):
+        super().__init__(scene, ShopDrawable(), location, size)
+        self.originLocation = location[:]
+        self.offset = (0, 0)
+        self.nowIndent = 0
+        self.newBlock = ShopBlock(self, (340, 444))
+        self.buyButton = ShopBuyButton(self, (660, 444), 'BUY')
+        self.resetButton = ShopResetButton(self, (660, 644), 'Reset')
+        self.entities = [
+            ShopMoney(self, (0, 0)),
+            ShopCodeButton(self, (20, 120), [('for i in range(2):', 0, 1)], 2),
+            ShopCodeButton(self, (340, 120), [('attack(3)', 0, 0)], 2),
+            ShopCodeButton(self, (660, 120), [('attack(1)', 0, 0)], 1),
+            ShopCodeButton(self, (20, 228), [('hello', 0, 0)], 4),
+            ShopCodeButton(self, (340, 228), [('hello', 0, 0)], 5),
+            ShopCodeButton(self, (660, 228), [('hello', 0, 0)], 1),
+            ShopCodeButton(self, (20, 336), [('hello', 0, 0)], 2),
+            ShopCodeButton(self, (340, 336), [('hello', 0, 0)], 3),
+            ShopCodeButton(self, (660, 336), [('hello', 0, 0)], 4),
+            self.newBlock,
+            self.buyButton,
+            ShopIndentButton(self, (20, 644), '->'),
+            ShopUnindentButton(self, (340, 644), '<-'),
+            self.resetButton,
+        ]
+        self.nowMoney = 5
+        self.maxMoney = 5
+    def update(self):
+        super().update()
+        self.location = (self.originLocation[0]+self.offset[0], self.originLocation[1]+self.offset[1])
+        if self.scene.shopping and self.offset[0] > -1000:
+            self.offset = (max(self.offset[0] - (1000 + self.offset[0])//20, -1000), self.offset[1])
+        elif not self.scene.shopping and self.offset[0] < 0:
+            self.offset = (min(self.offset[0] + (-self.offset[0]+20)//20, 0), self.offset[1])
+        for entity in self.entities:
+            entity.update()
+    def onPress(self):
+        super().onPress()
+        for entity in self.entities:
+            entity.onPress()
+    def draw(self, ctx):
+        super().draw(ctx)
+        for entity in self.entities:
+            entity.draw(ctx)
+
+class ShopEntity(Object):
+    def __init__(self, parent, drawable, offset, size):
+        super().__init__(parent.scene, ShopButtonDrawable(), (parent.location[0]+offset[0], parent.location[1]+offset[1]), size)
+        self.parent = parent
+        self.offset = offset
+        self.cost = None
+    def update(self):
+        super().update()
+        self.location = (self.parent.location[0]+self.offset[0], self.parent.location[1]+self.offset[1])
+    def draw(self, ctx):
+        super().draw(ctx)
+        if self.cost != None:
+            CostDrawable(self.cost).draw(ctx, self.location)
+
+class ShopBlock(ShopEntity):
+    def __init__(self, parent, offset):
+        super().__init__(parent, BlockDrawable(), offset, (300, 180))
+        self.code = []
+        self.fontSize = 16
+        self.lineSpace = 1.5
+        self.text = []
+        self.makeCode()
+        self.nowCost = 0
+
+    def onPress(self):
+        super().onPress()
+        if self.isHover() and self.parent.scene.shopping:
+            self.onClick()
+    def onClick(self):
+        pass
+
+    def makeCode(self):
+        self.text = []
+        for c in self.code:
+            self.text += ['    ' * c[1] + c[0]]
+        self.size = (self.size[0], 80-self.fontSize + (max(1, len(self.code))-1)*self.fontSize*self.lineSpace)
+
+    def draw(self, ctx):
+        super().draw(ctx)
+        i=0
+        if len(self.text):
+            for text in self.text:
+                Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
+                i+=1
+        else:
+            Text('# empty', QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
+class ShopMoney(ShopEntity):
+    def __init__(self, parent, offset):
+        super().__init__(parent, None, (offset[0], offset[1]), (980, 99))
+        
+    def draw(self, ctx):
+        super().draw(ctx)
+        for i in range(self.parent.maxMoney):
+            if i<self.parent.nowMoney:
+                ShopMoneyDrawable().draw(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
+            else:
+                ShopMoneyDrawable().draw2(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
+class ShopButton(ShopEntity):
+    def __init__(self, parent, offset):
+        super().__init__(parent, ShopButtonDrawable(), offset, (300, 88))
+    def onPress(self):
+        super().onPress()
+        if self.isHover():
+            self.onClick()
+    def onClick(self):
+        pass
+
+class ShopCodeButton(ShopButton):
+    def __init__(self, parent, offset, code, cost):
+        super().__init__(parent, offset)
+        self.code = code
+        self.text = []
+        self.makeCode()
+        self.lineSpace = 1.5
+        self.cost = cost
+    def makeCode(self):
+        self.text = []
+        for c in self.code:
+            self.text += ['    ' * c[1] + c[0] + '\n']
+    def draw(self, ctx):
+        super().draw(ctx)
+        i=0
+        for text in self.text:
+            Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
+            i+=1
+    def onClick(self):
+        if self.parent.nowIndent != 0 or len(self.parent.newBlock.code) == 0:
+            if self.parent.nowMoney >= self.cost:
+                self.parent.newBlock.nowCost += self.cost
+                self.parent.nowMoney -= self.cost
+                for code in self.code:
+                    self.parent.newBlock.code.append((code[0], code[1]+self.parent.nowIndent))
+                self.parent.newBlock.makeCode()
+                self.parent.nowIndent = self.code[-1][1] + self.parent.nowIndent + code[2]
+                self.parent.buyButton.cost = self.parent.newBlock.nowCost
+        
+class ShopTextButton(ShopButton):
+    def __init__(self, parent, offset, text=''):
+        super().__init__(parent, offset)
+        self.text = text
+        self.fontSize = 32
+    def draw(self, ctx):
+        super().draw(ctx)
+        Text(self.text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], self.location[1] + self.size[1]//2 + self.fontSize//2))
+
+class ShopBuyButton(ShopTextButton):
+    def __init__(self, parent, offset, text):
+        super().__init__(parent, offset, text)
+        self.cost = 0
+    def onClick(self):
+        super().onClick()
+        if len(self.parent.newBlock.code)>0:
+            self.parent.nowIndent = 0
+            self.parent.newBlock.nowCost = 0
+            self.scene.scroll.addBlock(Block(self.scene, (40, 40), self.parent.newBlock.code))
+            self.parent.newBlock.code = []
+            self.parent.newBlock.makeCode()
+            self.cost = 0
+class ShopUnindentButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        self.parent.nowIndent = max(0, self.parent.nowIndent-1)
+
+class ShopIndentButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        self.parent.nowIndent = self.parent.nowIndent+1
+
+class ShopResetButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        self.reset()
+    def reset(self):
+        self.parent.newBlock.code = []
+        self.parent.newBlock.makeCode()
+        self.parent.nowMoney += self.parent.newBlock.nowCost
+        self.parent.newBlock.nowCost = 0
+        self.parent.nowIndent = 0
+        self.parent.buyButton.cost = 0
+
+class Clock(Object):
+    def __init__(self, scene, location, size = (400, 200)):
+        super().__init__(scene, None, location, size)
+        self.showTime = True
+        self.message = 'Wait'
+        self.time = 0
+
+    def draw(self, ctx):
+        super().draw(ctx)
+        if self.showTime:
+            Text(str(self.time), QFont('D2Coding', 48), QColor(255, 255, 255)).draw(ctx, self.location)
+        else:
+            Text(self.message, QFont('D2Coding', 48), QColor(255, 255, 255)).draw(ctx, self.location)
