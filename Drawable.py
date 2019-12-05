@@ -43,7 +43,7 @@ class AnimatedImage(Drawable):
         qp.drawPixmap(QRect(location[0], location[1], size[0], size[1]), self.pixmap[self.frame//1])
     
     def animate(self, i):
-        self.frame = (self.frame*2+i) % len(pixmap)
+        self.frame = (self.frame+i) % len(pixmap)
             
 
 class Rect(Drawable):
