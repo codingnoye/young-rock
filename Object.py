@@ -2,6 +2,7 @@ from Drawable import *
 import time
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect, QPoint
+import Codes
 
 class Object:
     def __init__(self, scene, drawable, location, size):
@@ -46,10 +47,7 @@ class Player(Object):
     def __init__(self, scene, location, size):
         super().__init__(scene, Image('./res/image/python.svg'), location, size)
         self._health = 100
-        self._shield = 0
-        self._armor = 0
-        self._power = 0
-        self._evade = 0
+        self.reset()
         self.effectOffset = (size[0]/2, 0)
         self.hpbar = HpDrawable(150, 30)
         self.alive = True
@@ -67,6 +65,12 @@ class Player(Object):
                     damage -= self._shield
                     self._shield = 0
                 self.health -= max(damage-self._armor, 0)
+    def reset(self):
+        self._shield = 0
+        self._armor = 0
+        self._power = 0
+        self._evade = 0
+
     @property
     def evade(self):
         return self._evade
@@ -75,6 +79,20 @@ class Player(Object):
         if newval>self._evade:
             self.showEffect('evade', '+' + str(newval - self._evade))
         self._evade = newval
+
+    @property
+    def power(self):
+        return self._power
+    @power.setter
+    def power(self, newval):
+        self._power = newval if newval>0 else 0
+
+    @property
+    def armor(self):
+        return self._armor
+    @armor.setter
+    def armor(self, newval):
+        self._armor = newval if newval>0 else 0
 
     @property
     def health(self):
@@ -91,6 +109,7 @@ class Player(Object):
             self._health = newval
         else:
             self.showEffect('nothing', 0)
+        if self._health < 0: self._health = 0
 
     @property
     def shield(self):
@@ -221,13 +240,14 @@ class Shop(Object):
         self.offset = (0, 0)
         self.nowIndent = 0
         self.newBlock = ShopBlock(self, (340, 444))
-        self.buyButton = ShopBuyButton(self, (660, 444), 'BUY')
-        self.resetButton = ShopResetButton(self, (660, 644), 'Reset')
+        self.buyButton = ShopBuyButton(self, (660, 444), 'append()')
+        self.locked = False
+        self.lockBlocks = []
         self.entities = [
             ShopMoney(self, (0, 0)),
-            ShopCodeButton(self, (20, 120), [('for i in range(2):', 0, 1)], 2),
-            ShopCodeButton(self, (340, 120), [('attack(3)', 0, 0)], 2),
-            ShopCodeButton(self, (660, 120), [('attack(1)', 0, 0)], 1),
+            ShopCodeButton(self, (20, 120), [('hello', 0, 1)], 2),
+            ShopCodeButton(self, (340, 120), [('hello', 0, 0)], 2),
+            ShopCodeButton(self, (660, 120), [('hello', 0, 0)], 1),
             ShopCodeButton(self, (20, 228), [('hello', 0, 0)], 4),
             ShopCodeButton(self, (340, 228), [('hello', 0, 0)], 5),
             ShopCodeButton(self, (660, 228), [('hello', 0, 0)], 1),
@@ -236,12 +256,20 @@ class Shop(Object):
             ShopCodeButton(self, (660, 336), [('hello', 0, 0)], 4),
             self.newBlock,
             self.buyButton,
-            ShopIndentButton(self, (20, 644), '->'),
-            ShopUnindentButton(self, (340, 644), '<-'),
-            self.resetButton,
+            ShopIndentButton(self, (20, 444), '---->'),
+            ShopUnindentButton(self, (20, 544), '<----'),
+            ShopShiftButton(self, (20, 644), 'shift()'),
+            ShopUnshiftButton(self, (340, 644), 'unshift()'),
+            ShopResetButton(self, (660, 544), 'reset()'),
+            ShopRerollButton(self, (20, 752), 'reroll()'),
+            ShopLevelupButton(self, (340, 752), 'level++'),
+            ShopPopButton(self, (660, 644), 'pop()'),
+            ShopLockButton(self, (660, 752), 'lock()')
         ]
-        self.nowMoney = 5
-        self.maxMoney = 5
+        self.nowMoney = 2
+        self.maxMoney = 2
+        self.level = 1
+        self.reroll()
     def update(self):
         super().update()
         self.location = (self.originLocation[0]+self.offset[0], self.originLocation[1]+self.offset[1])
@@ -259,6 +287,32 @@ class Shop(Object):
         super().draw(ctx)
         for entity in self.entities:
             entity.draw(ctx)
+    def reroll(self):
+        codes = Codes.giveCode(self.level)
+        i=1;
+        for c in codes:
+            self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
+            i+=1
+    def reset(self):
+        self.newBlock.code = []
+        self.newBlock.makeCode()
+        self.nowMoney += self.newBlock.nowCost
+        self.newBlock.nowCost = 0
+        self.nowIndent = 0
+        self.buyButton.cost = 0
+        if self.locked:
+            self.unlock()
+
+    def lock(self):
+        self.locked = True
+        self.lockBlocks = self.entities[1:10]
+    
+    def unlock(self):
+        self.locked = False
+        i=1;
+        for c in self.lockBlocks:
+            self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
+            i+=1
 
 class ShopEntity(Object):
     def __init__(self, parent, drawable, offset, size):
@@ -273,7 +327,6 @@ class ShopEntity(Object):
         super().draw(ctx)
         if self.cost != None:
             CostDrawable(self.cost).draw(ctx, self.location)
-
 class ShopBlock(ShopEntity):
     def __init__(self, parent, offset):
         super().__init__(parent, BlockDrawable(), offset, (300, 180))
@@ -313,10 +366,10 @@ class ShopMoney(ShopEntity):
     def draw(self, ctx):
         super().draw(ctx)
         for i in range(self.parent.maxMoney):
+            ShopMoneyDrawable().draw2(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
             if i<self.parent.nowMoney:
                 ShopMoneyDrawable().draw(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
-            else:
-                ShopMoneyDrawable().draw2(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
+
 class ShopButton(ShopEntity):
     def __init__(self, parent, offset):
         super().__init__(parent, ShopButtonDrawable(), offset, (300, 88))
@@ -326,7 +379,6 @@ class ShopButton(ShopEntity):
             self.onClick()
     def onClick(self):
         pass
-
 class ShopCodeButton(ShopButton):
     def __init__(self, parent, offset, code, cost):
         super().__init__(parent, offset)
@@ -354,17 +406,16 @@ class ShopCodeButton(ShopButton):
                     self.parent.newBlock.code.append((code[0], code[1]+self.parent.nowIndent))
                 self.parent.newBlock.makeCode()
                 self.parent.nowIndent = self.code[-1][1] + self.parent.nowIndent + code[2]
-                self.parent.buyButton.cost = self.parent.newBlock.nowCost
-        
+                self.parent.buyButton.cost = self.parent.newBlock.nowCost   
 class ShopTextButton(ShopButton):
     def __init__(self, parent, offset, text=''):
         super().__init__(parent, offset)
+        self.size = (300, 88)
         self.text = text
-        self.fontSize = 32
+        self.fontSize = 26
     def draw(self, ctx):
         super().draw(ctx)
-        Text(self.text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], self.location[1] + self.size[1]//2 + self.fontSize//2))
-
+        Text(self.text, QFont('NotoMono', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], self.location[1] + self.size[1]//2 + self.fontSize//2))
 class ShopBuyButton(ShopTextButton):
     def __init__(self, parent, offset, text):
         super().__init__(parent, offset, text)
@@ -382,24 +433,74 @@ class ShopUnindentButton(ShopTextButton):
     def onClick(self):
         super().onClick()
         self.parent.nowIndent = max(0, self.parent.nowIndent-1)
-
 class ShopIndentButton(ShopTextButton):
     def onClick(self):
         super().onClick()
         self.parent.nowIndent = self.parent.nowIndent+1
-
+class ShopShiftButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        scr = self.parent.scene.scroll.blocks
+        if len(scr)>1:
+            self.parent.scene.scroll.blocks = [scr[-1]] + scr[:-1]
+class ShopUnshiftButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        scr = self.parent.scene.scroll.blocks
+        if len(scr)>1:
+            self.parent.scene.scroll.blocks = scr[1:] + [scr[0]]
+class ShopPopButton(ShopTextButton):
+    def onClick(self):
+        super().onClick()
+        scr = self.parent.scene.scroll.blocks
+        if len(scr)>0:
+            self.parent.scene.scroll.blocks.pop(0)
 class ShopResetButton(ShopTextButton):
+    def __init__(self, parent, offset, text=''):
+        super().__init__(parent, offset, text=text)
+        self.size = (300, 80)
     def onClick(self):
         super().onClick()
         self.reset()
     def reset(self):
-        self.parent.newBlock.code = []
-        self.parent.newBlock.makeCode()
-        self.parent.nowMoney += self.parent.newBlock.nowCost
-        self.parent.newBlock.nowCost = 0
-        self.parent.nowIndent = 0
-        self.parent.buyButton.cost = 0
-
+        self.parent.reset()
+class ShopRerollButton(ShopTextButton):
+    def __init__(self, parent, offset, text=''):
+        super().__init__(parent, offset, text=text)
+        self.cost = 1
+    def onClick(self):
+        super().onClick()
+        if self.parent.nowMoney >= self.cost:
+            self.parent.nowMoney -= self.cost
+            self.parent.reroll()
+class ShopLevelupButton(ShopTextButton):
+    def __init__(self, parent, offset, text=''):
+        super().__init__(parent, offset, text=text)
+        self.cost = 1
+    def onClick(self):
+        super().onClick()
+        if self.cost != None:
+            if self.parent.nowMoney >= self.cost:
+                self.parent.nowMoney -= self.cost
+                self.parent.level += 1
+                self.cost = self.parent.level * 2 - 1
+            if self.parent.level>=5:
+                self.cost = None
+                self.text = "MAX"
+        
+class ShopLockButton(ShopTextButton):
+    def __init__(self, parent, offset, text=''):
+        super().__init__(parent, offset, text=text)
+    def onClick(self):
+        super().onClick()
+        if self.parent.locked:
+            self.parent.unlock()
+        else:
+            self.parent.lock()
+    def draw(self, ctx):
+        super().draw(ctx)
+        if self.parent.locked:
+            self.drawable.drawWrap(ctx, self.location, self.size)
 class Clock(Object):
     def __init__(self, scene, location, size = (400, 200)):
         super().__init__(scene, None, location, size)
@@ -410,6 +511,6 @@ class Clock(Object):
     def draw(self, ctx):
         super().draw(ctx)
         if self.showTime:
-            Text(str(self.time), QFont('D2Coding', 48), QColor(255, 255, 255)).draw(ctx, self.location)
+            Text(str(self.time), QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)
         else:
-            Text(self.message, QFont('D2Coding', 48), QColor(255, 255, 255)).draw(ctx, self.location)
+            Text(self.message, QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)

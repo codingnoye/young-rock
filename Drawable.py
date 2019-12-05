@@ -117,15 +117,15 @@ class ShopMoneyDrawable(Drawable):
     def draw(self, ctx, location, size):
         event = ctx[0]
         qp = ctx[1]
-        qp.setPen(QPen(QColor(0, 0, 0), 1))
-        qp.setBrush(QColor(20, 20, 200))
-        qp.drawRect(location[0], location[1], size[0], size[1])
+        qp.setPen(QPen(QColor(255, 255, 0), 10))
+        qp.setBrush(QColor(185, 185, 0))
+        qp.drawRect(location[0]+10, location[1]+10, size[0]-20, size[1]-20)
 
     def draw2(self, ctx, location, size):
         event = ctx[0]
         qp = ctx[1]
-        qp.setPen(QPen(QColor(0, 0, 0), 1))
-        qp.setBrush(QColor(20, 20, 20))
+        qp.setPen(QPen(QColor(255, 255, 255), 2))
+        qp.setBrush(QColor(0, 0, 0))
         qp.drawRect(location[0], location[1], size[0], size[1])
 
 class CostDrawable(Drawable):
@@ -134,7 +134,7 @@ class CostDrawable(Drawable):
     def draw(self, ctx, location, size=(40, 40)):
         event = ctx[0]
         qp = ctx[1]
-        qp.setPen(QPen(QColor(0, 0, 0), 1))
-        qp.setBrush(QColor(20, 20, 200))
+        qp.setPen(QPen(QColor(255, 255, 0), 4))
+        qp.setBrush(QColor(185, 185, 0))
         qp.drawRect(location[0]-size[0]//2, location[1]-size[1]//2, size[0], size[1])
-        Text(str(self.cost), QFont('D2Coding', 24), QColor(255, 255, 255)).draw(ctx, (location[0]-8, location[1]+12))
+        Text(str(self.cost), QFont('NotoMono', 24, 1), QColor(0, 0, 0)).draw(ctx, (location[0]-10, location[1]+12))

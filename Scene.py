@@ -56,18 +56,6 @@ class TestScene(Scene):
         self.shopping = True
         self.shop = Shop(self)
         self.shop.objid = self.addObject(self.shop)
-
-        self.scroll.addBlock(Block(self, (40, 40), [
-            ('for i in range(3):', 0),
-            ('attack(3)', 1),
-            ('player.health += 5', 0),
-            ('player.evade = 2', 0)
-            ]))
-
-        self.scroll.addBlock(Block(self, (40, 40), [
-            ('for i in range(2):', 0),
-            ('defence(4)', 1)
-            ]))
         
         self.enemyScroll.addBlock(Block(self, (40, 40), [
             ('for i in range(3):', 0),
@@ -86,7 +74,9 @@ class TestScene(Scene):
         self.shopping = True
         self.shopClock = Clock(self, (400, 50))
         self.shopClockId = self.addObject(self.shopClock)
+        self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
         self.shop.nowMoney = self.shop.maxMoney
+        self.shop.reroll()
         thread = threading.Thread(target=self.shoppingThread, args=())
         thread.start()
 
@@ -94,13 +84,13 @@ class TestScene(Scene):
     def shoppingThread(self):
         starttime = time.time()
         nowtime = time.time()
+        self.shop.reset()
         while nowtime - starttime < 15:
             nowtime = time.time()
             self.shopClock.time = int(15 - (nowtime - starttime))
             time.sleep(0.2)
         self.removeObject(self.shopClockId)
         self.shopping = False
-        self.shop.resetButton.reset()
         self.startBattle(True)
 
     def draw(self, ctx):
@@ -145,8 +135,6 @@ class TestScene(Scene):
             scroll = self.scroll if myturn else self.enemyScroll
             pi = 0 if myturn else 1
 
-            player.shield = 0
-            player.evade = 0
             if blocki[pi] < len(scroll.blocks):
                 i = blocki[pi]
                 scroll.nowblock = i
