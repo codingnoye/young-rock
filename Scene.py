@@ -7,8 +7,14 @@ from Object import *
 from Drawable import *
 
 import threading
+import Socket
+
+import json
+
+ctx = dict()
 
 class Scene:
+    game = None
     def __init__(self):
         self.objects = []
         self.mouse = (0, 0)
@@ -37,9 +43,38 @@ class Scene:
             if obj != None:
                 obj.event(e)
 
-class TestScene(Scene):
+class TitleScene(Scene):
     def __init__(self):
         super().__init__()
+        Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
+        self.status = ""
+        self.addObject(Button(self, "HOST", self.host, (400, 500)))
+        self.addObject(Button(self, "JOIN", self.join, (900, 500)))
+
+    def host(self):
+        sock = Socket.Server()
+        print('i am server')
+        self.sock = sock
+        ctx['imHost'] = True
+        ctx['sock'] = sock
+        sock.connect()
+        Scene.game.setScene(MainScene())
+    
+    def join(self):
+        sock = Socket.Client()
+        print('i am client')
+        self.sock = sock
+        ctx['imHost'] = False
+        ctx['sock'] = sock
+        sock.connect()
+        Scene.game.setScene(MainScene())
+
+class MainScene(Scene):
+    def __init__(self):
+        super().__init__()
+        Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
+        self.sock = ctx['sock']
+        self.sock.recv(self.sockRecv)
 
         self.scroll = Scroll(self, (20, 20), (340, 860))
         self.scroll.objid = self.addObject(self.scroll)
@@ -57,17 +92,6 @@ class TestScene(Scene):
         self.shop = Shop(self)
         self.shop.objid = self.addObject(self.shop)
         
-        self.enemyScroll.addBlock(Block(self, (40, 40), [
-            ('for i in range(3):', 0),
-            ('attack(3)', 1),
-            ('player.health += 5', 0)
-            ]))
-
-        self.enemyScroll.addBlock(Block(self, (40, 40), [
-            ('for i in range(2):', 0),
-            ('attack(6)', 1)
-            ]))
-
         self.goShopping()
 
     def goShopping(self):
@@ -91,7 +115,7 @@ class TestScene(Scene):
             time.sleep(0.2)
         self.removeObject(self.shopClockId)
         self.shopping = False
-        self.startBattle(True)
+        self.startBattle(ctx['imHost'])
 
     def draw(self, ctx):
         super().draw(ctx)
@@ -146,4 +170,6 @@ class TestScene(Scene):
             myturn = not myturn
         #battle end
         self.goShopping()
-
+    
+    def sockRecv(self, data):
+        self.enemyScroll.addBlock(Block(self, (40, 40), json.loads(data)))

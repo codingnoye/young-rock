@@ -3,6 +3,8 @@ import time
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect, QPoint
 import Codes
+import Socket
+import json
 
 class Object:
     def __init__(self, scene, drawable, location, size):
@@ -42,6 +44,30 @@ class Object:
     
     def onMouseMove(self):
         pass
+
+class Button(Object):
+    def __init__(self, scene, text, callback, location, size=(300, 150)):
+        super().__init__(scene, ButtonDrawable(), location, size)
+        self.text = text
+        self.callback = callback
+    def draw(self, ctx):
+        super().draw(ctx)
+        Text(self.text, QFont('NotoMono', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], self.location[1] + self.size[1]//2 + self.fontSize//2))
+    def onClick(self):
+        self.callback()
+    def onPress(self):
+        super().onPress()
+        if self.isHover():
+            self.onClick()
+
+class Label(Object):
+    def __init__(self, scene, location, size = (400, 200)):
+        super().__init__(scene, None, location, size)
+        self.text = ''
+
+    def draw(self, ctx):
+        super().draw(ctx)
+        Text(self.text, QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)
 
 class Player(Object):
     def __init__(self, scene, location, size):
@@ -426,6 +452,9 @@ class ShopBuyButton(ShopTextButton):
             self.parent.nowIndent = 0
             self.parent.newBlock.nowCost = 0
             self.scene.scroll.addBlock(Block(self.scene, (40, 40), self.parent.newBlock.code))
+            
+            self.scene.sock.send(json.dumps(self.parent.newBlock.code))
+
             self.parent.newBlock.code = []
             self.parent.newBlock.makeCode()
             self.cost = 0
@@ -486,8 +515,7 @@ class ShopLevelupButton(ShopTextButton):
                 self.cost = self.parent.level * 2 - 1
             if self.parent.level>=5:
                 self.cost = None
-                self.text = "MAX"
-        
+                self.text = "MAX"        
 class ShopLockButton(ShopTextButton):
     def __init__(self, parent, offset, text=''):
         super().__init__(parent, offset, text=text)

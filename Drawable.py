@@ -113,6 +113,15 @@ class ShopButtonDrawable(Drawable):
         qp.setBrush(QColor(200, 200, 200, 50))
         qp.drawRect(location[0], location[1], size[0], size[1])
 
+
+class ButtonDrawable(Drawable):
+    def draw(self, ctx, location, size):
+        event = ctx[0]
+        qp = ctx[1]
+        qp.setPen(QPen(QColor(200, 200, 200), 3))
+        qp.setBrush(QColor(30, 30, 30))
+        qp.drawRect(location[0], location[1], size[0], size[1])
+
 class ShopMoneyDrawable(Drawable):
     def draw(self, ctx, location, size):
         event = ctx[0]

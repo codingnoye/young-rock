@@ -1,37 +1,33 @@
-power = 10
-
-def attack(dmg):
-    print(f'attack {dmg}dmg')
-
-def executer(lines):
-    # return isleft
-    pended = []
-    lastindent = 0
-    for i in range(len(lines)):
-        line = lines[i]
-        if lastindent != 0 and line[1] == 0:
-            source = ''
-            for pline in pended:
-                source += ('    ' * pline[1]) + pline[0] + '\n'
-            exec(source, globals(), locals())
-            pended = []
-            yield True
-        pended.append(line)
-        lastindent = line[1]
-    source = ''
-    for pline in pended:
-        source += '    ' * pline[1] + pline[0] + '\n'
-    exec(source, globals(), locals())
-    yield False
-
-lines = [
-    ('for i in range(3):', 0),
-    ('attack(5)', 1),
-    ('attack(3)', 1),
-    ('attack(4)', 0)
-]
-
-for more in executer(lines):
-    if not more: break
-    input()
-
+import sys
+inp = input()
+res = ''
+nextUpper = False
+isJava = None
+def error():
+    print('Error!')
+    sys.exit(0)
+if inp[0] == '_' or inp[0]<'a':
+    error()
+for c in inp:
+    #print(c, isJava)
+    if c<'A' or 'z'<c or ('Z'<c and c<'a' and c!='_'):
+        error()
+    elif c=='_':
+        if isJava == True: error()
+        if nextUpper == True: error()
+        nextUpper = True
+        isJava = False
+    elif 'A'<=c and c<'a':
+        if isJava == False: error()
+        res+='_'+c.lower()
+        isJava = True
+    elif nextUpper:
+        if isJava == True: error()
+        res += c.upper()
+        nextUpper = False
+        isJava = False
+    else:
+        res+=c
+if nextUpper:
+    error()
+print(res)
