@@ -109,9 +109,9 @@ class MainScene(Scene):
         starttime = time.time()
         nowtime = time.time()
         self.shop.reset()
-        while nowtime - starttime < 15:
+        while nowtime - starttime < 25:
             nowtime = time.time()
-            self.shopClock.time = int(15 - (nowtime - starttime))
+            self.shopClock.time = int(25 - (nowtime - starttime))
             time.sleep(0.2)
         self.removeObject(self.shopClockId)
         self.shopping = False
@@ -169,7 +169,19 @@ class MainScene(Scene):
             blocki[pi] += 1
             myturn = not myturn
         #battle end
+        self.player.reset()
+        self.enemy.reset()
         self.goShopping()
     
-    def sockRecv(self, data):
-        self.enemyScroll.addBlock(Block(self, (40, 40), json.loads(data)))
+    def sockRecv(self, recv):
+        code, data = json.loads(recv)
+        if code == 0: # buy
+            self.enemyScroll.addBlock(Block(self, (40, 40), data))
+        elif code == 1: # shift
+            scr = self.enemyScroll.blocks
+            self.enemyScroll.blocks = [scr[-1]] + scr[:-1]
+        elif code == 2: # shift
+            scr = self.enemyScroll.blocks
+            self.enemyScroll.blocks = scr[1:] + [scr[0]]
+        elif code == 3:
+            self.enemyScroll.blocks.pop(0)

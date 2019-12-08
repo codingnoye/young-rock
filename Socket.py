@@ -1,7 +1,7 @@
 import socket
 import threading
 
-SERVER = ('127.0.0.1', 3005)
+SERVER = ('', 3005)
 
 class Socket:
     def recv(self, callback):

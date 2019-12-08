@@ -453,7 +453,7 @@ class ShopBuyButton(ShopTextButton):
             self.parent.newBlock.nowCost = 0
             self.scene.scroll.addBlock(Block(self.scene, (40, 40), self.parent.newBlock.code))
             
-            self.scene.sock.send(json.dumps(self.parent.newBlock.code))
+            self.scene.sock.send(json.dumps((0, self.parent.newBlock.code)))
 
             self.parent.newBlock.code = []
             self.parent.newBlock.makeCode()
@@ -472,18 +472,21 @@ class ShopShiftButton(ShopTextButton):
         scr = self.parent.scene.scroll.blocks
         if len(scr)>1:
             self.parent.scene.scroll.blocks = [scr[-1]] + scr[:-1]
+            self.scene.sock.send(json.dumps((1, 0)))
 class ShopUnshiftButton(ShopTextButton):
     def onClick(self):
         super().onClick()
         scr = self.parent.scene.scroll.blocks
         if len(scr)>1:
             self.parent.scene.scroll.blocks = scr[1:] + [scr[0]]
+            self.scene.sock.send(json.dumps((2, 0)))
 class ShopPopButton(ShopTextButton):
     def onClick(self):
         super().onClick()
         scr = self.parent.scene.scroll.blocks
         if len(scr)>0:
             self.parent.scene.scroll.blocks.pop(0)
+            self.scene.sock.send(json.dumps((3, 0)))
 class ShopResetButton(ShopTextButton):
     def __init__(self, parent, offset, text=''):
         super().__init__(parent, offset, text=text)
