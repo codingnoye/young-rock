@@ -513,7 +513,7 @@ class ShopLevelupButton(ShopTextButton):
                 self.parent.nowMoney -= self.cost
                 self.parent.scene.player.level += 1
                 self.cost = self.parent.scene.player.level * 2 - 1
-                self.scene.sock.send(json.dumps((4, self.parent.player.level)))
+                self.scene.sock.send(json.dumps((4, self.parent.scene.player.level)))
             if self.parent.scene.player.level>=5:
                 self.cost = None
                 self.text = "MAX"        
