@@ -100,10 +100,10 @@ class MainScene(Scene):
         self.shopping = True
         self.shopClock = Clock(self, (400, 50))
         self.shopClockId = self.addObject(self.shopClock)
+        self.shop.reroll()
         self.shop.reset()
         self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
         self.shop.nowMoney = self.shop.maxMoney
-        self.shop.reroll()
         thread = threading.Thread(target=self.shoppingThread, args=())
         thread.start()
 
@@ -185,8 +185,10 @@ class MainScene(Scene):
         elif code == 1: # shift
             scr = self.enemyScroll.blocks
             self.enemyScroll.blocks = [scr[-1]] + scr[:-1]
-        elif code == 2: # shift
+        elif code == 2: # unshift
             scr = self.enemyScroll.blocks
             self.enemyScroll.blocks = scr[1:] + [scr[0]]
-        elif code == 3:
+        elif code == 3: # pop
             self.enemyScroll.blocks.pop(0)
+        elif code == 4: # level
+            self.enemy.level = data
