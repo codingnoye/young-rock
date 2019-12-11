@@ -266,7 +266,7 @@ class Scroll(Object):
 class Dmg(Object):
     def __init__(self, scene, location, text, color, size):
         super().__init__(scene, Text(text, QFont('D2Coding', size), color), location, (100, 50))
-        self.lifetime = -15
+        self.lifetime = 0
     def update(self):
         self.lifetime += 1
         if self.lifetime>0:

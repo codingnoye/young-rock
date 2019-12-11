@@ -72,7 +72,10 @@ class TitleScene(Scene):
 class MainScene(Scene):
     def __init__(self):
         super().__init__()
-        Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
+        #Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
+        #Scene.game.setStyleSheet("background-image: url(:./res/image/background.png);");
+        self.backgroundPixmap = QPixmap('./res/image/background.png')
+
         self.sock = ctx['sock']
         self.sock.recv(self.sockRecv)
 
@@ -114,16 +117,19 @@ class MainScene(Scene):
         starttime = time.time()
         nowtime = time.time()
         timeLimit = 15 + min(20, 4*self.turn)
+
+        print(self.turn, timeLimit)
         while nowtime - starttime < timeLimit:
             nowtime = time.time()
             self.shopClock.time = int(timeLimit - (nowtime - starttime))
             time.sleep(0.2)
         self.removeObject(self.shopClockId)
         self.shopping = False
-        self.startBattle(ctx['imHost'])
         self.turn += 1
+        self.startBattle(ctx['imHost'])
 
     def draw(self, ctx):
+        ctx[1].drawPixmap(0, 0, self.game.width(), self.game.height(), self.backgroundPixmap)
         super().draw(ctx)
         Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
 
@@ -145,8 +151,9 @@ class MainScene(Scene):
     # @thread
     def sandbox(self, player, enemy, text):
         def attack(val):
-            enemy.getAttacked(val)
             player.setAct(Act.ATTACK)
+            time.sleep(8/60*2)
+            enemy.getAttacked(val)
         def defence(val):
             player.shield += val
         try:
@@ -180,7 +187,7 @@ class MainScene(Scene):
         self.player.reset()
         self.enemy.reset()
         self.goShopping()
-    
+
     def sockRecv(self, recv):
         code, data = json.loads(recv)
         if code == 0: # buy
