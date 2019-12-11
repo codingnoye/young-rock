@@ -5,6 +5,8 @@ from PyQt5.QtCore import Qt, QRect, QPoint
 import Codes
 import Socket
 import json
+import enum
+import random
 
 class Object:
     def __init__(self, scene, drawable, location, size):
@@ -69,15 +71,38 @@ class Label(Object):
         super().draw(ctx)
         Text(self.text, QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)
 
+class Act(enum.IntEnum):
+    IDLE = 0
+    ATTACK = 1
+    HATTACK = 2
+    EVADE = 3
+    HURT = 4
+    DIE = 5
+
+ActSprite = [[] for _ in range(len(Act))]
 class Player(Object):
+    first = True
     def __init__(self, scene, location, size):
-        super().__init__(scene, Image('./res/image/python.svg'), location, size)
+        if Player.first:
+            ActSprite[Act.IDLE] = [AnimatedImage(['./res/image/idle/0.png', './res/image/idle/1.png', './res/image/idle/2.png', './res/image/idle/3.png'])]
+            ActSprite[Act.ATTACK] = [
+                AnimatedImage(['./res/image/attack/00.png', './res/image/attack/01.png', './res/image/attack/02.png', './res/image/attack/03.png', './res/image/attack/04.png']),
+                AnimatedImage(['./res/image/attack/10.png', './res/image/attack/11.png', './res/image/attack/12.png', './res/image/attack/13.png', './res/image/attack/14.png', './res/image/attack/15.png']),
+                AnimatedImage(['./res/image/attack/20.png', './res/image/attack/21.png', './res/image/attack/22.png', './res/image/attack/23.png', './res/image/attack/24.png', './res/image/attack/25.png'])
+                ]
+            ActSprite[Act.HURT] = [
+                AnimatedImage(['./res/image/hurt/0.png', './res/image/hurt/1.png', './res/image/hurt/2.png'])
+                ]
+            Player.first = False
+        super().__init__(scene, ActSprite[Act.IDLE][0], location, size)
         self._health = 100
         self.reset()
         self.effectOffset = (size[0]/2, 0)
         self.hpbar = HpDrawable(150, 30)
         self.alive = True
         self.level = 1
+        self.act = Act.IDLE
+        self.seeingRight = True
     
     def getAttacked(self, damage):
         if self._evade>0:
@@ -191,10 +216,30 @@ class Player(Object):
             dmg.objid = self.scene.addObject(dmg)
     
     def draw(self, ctx):
-        super().draw(ctx)
+        xoffset = 50
+        yoffset = 25
+        location = [self.location[0] - xoffset, self.location[1]-yoffset]
+        size = [self.size[0] + xoffset*2, self.size[1]+yoffset*2]
+        
+        if self.drawable != None:
+            if self.seeingRight:
+                self.drawable.draw(ctx, location, size)
+            else:
+                self.drawable.draw(ctx, location, size, False)
+
+        if self.drawable.animate(8/60):
+            if self.act == Act.IDLE:
+                self.setAct(Act.IDLE)
+            elif self.act == Act.ATTACK:
+                self.setAct(Act.IDLE)
+
         self.hpbar.draw(ctx, (self.location[0]+50-75, self.location[1]-70), (150*self.health/100, None))
         Text(str(self.health), QFont('D2Coding', 24), QColor(255, 255, 255)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-70+26))
         if self._shield>0: Text('+'+str(self._shield), QFont('D2Coding', 24), QColor(200, 200, 200)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-70+26)) 
+
+    def setAct(self, act):
+        self.drawable = random.choice(ActSprite[act])
+        self.drawable.reset()
 
 class Scroll(Object):
     def __init__(self, scene,  location, size):
@@ -221,12 +266,16 @@ class Scroll(Object):
 class Dmg(Object):
     def __init__(self, scene, location, text, color, size):
         super().__init__(scene, Text(text, QFont('D2Coding', size), color), location, (100, 50))
-        self.lifetime = 0
+        self.lifetime = -15
     def update(self):
         self.lifetime += 1
-        self.location = (self.location[0], self.location[1]-(55 - self.lifetime)/7)
+        if self.lifetime>0:
+            self.location = (self.location[0], self.location[1]-(55 - self.lifetime)/7)
         if self.lifetime>40:
             self.scene.removeObject(self.objid)
+    def draw(self, ctx):
+        if self.lifetime>0:
+            super().draw(ctx)
 
 class Block(Object):
     def __init__(self, scene, location, code = []):
@@ -309,7 +358,7 @@ class Shop(Object):
         codes = Codes.giveCode(self.scene.player.level)
         i=1;
         for c in codes:
-            self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
+            self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost, c.category)
             i+=1
     def reset(self):
         self.newBlock.code = []
@@ -329,7 +378,9 @@ class Shop(Object):
         self.locked = False
         i=1;
         for c in self.lockBlocks:
-            self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
+            self.entities[i] = c
+            c.selected = False
+            #self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
             i+=1
 
 class ShopEntity(Object):
@@ -394,9 +445,9 @@ class ShopButton(ShopEntity):
     def onClick(self):
         pass
 class ShopCodeButton(ShopButton):
-    def __init__(self, parent, offset, code, cost):
+    def __init__(self, parent, offset, code, cost, category=10):
         super().__init__(parent, offset)
-        self.drawable = ShopButtonDrawable()
+        self.drawable = ShopButtonDrawable(category)
         self.codeDrawable = CodeDrawable()
         self.code = code
         self.text = ''
@@ -404,6 +455,8 @@ class ShopCodeButton(ShopButton):
         self.lineSpace = 1.5
         self.cost = cost
         self.selected = False
+        self.sold = False
+        self.category = category
     def makeCode(self):
         self.text = ''
         for c in self.code:
@@ -412,11 +465,15 @@ class ShopCodeButton(ShopButton):
     def draw(self, ctx):
         super().draw(ctx)
         self.codeDrawable.draw(ctx, (self.location[0]+30, self.location[1]+40))
-        if self.selected:
+        if self.sold:
+            self.drawable.drawSold(ctx, self.location, self.size)
+        elif self.selected:
             self.drawable.drawWrap(ctx, self.location, self.size)
+        if self.cost != None:
+            CostDrawable(self.cost).draw(ctx, self.location)
     def onClick(self):
         if self.parent.nowIndent != 0 or self.code[-1][2] == 1:
-            if self.parent.nowMoney >= self.cost and not self.selected:
+            if self.parent.nowMoney >= self.cost and not self.selected and not self.sold:
                 self.parent.newBlock.nowCost += self.cost
                 self.parent.nowMoney -= self.cost
                 for code in self.code:
@@ -450,7 +507,8 @@ class ShopBuyButton(ShopTextButton):
             self.scene.sock.send(json.dumps((0, self.parent.newBlock.code)))
 
             self.parent.newBlock.code = []
-            self.selected = []
+            while len(self.selected):
+                self.selected.pop().sold = True
             self.parent.newBlock.makeCode()
             self.cost = 0
 class ShopUnindentButton(ShopTextButton):

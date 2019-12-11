@@ -86,6 +86,7 @@ class MainScene(Scene):
         self.player.objid = self.addObject(self.player)
 
         self.enemy = Player(self, (1050, 700), (100, 100))
+        self.enemy.seeingRight = False
         self.enemy.objid = self.addObject(self.enemy)
 
         self.shopping = True
@@ -102,6 +103,7 @@ class MainScene(Scene):
         self.shopClockId = self.addObject(self.shopClock)
         self.shop.reroll()
         self.shop.reset()
+        self.shop.buyButton.selected = []
         self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
         self.shop.nowMoney = self.shop.maxMoney
         thread = threading.Thread(target=self.shoppingThread, args=())
@@ -132,7 +134,7 @@ class MainScene(Scene):
         execText = ''
         for line in block.code:
             print(line)
-            if line[0][-1] != ':': execText += '    '*line[1] + 'time.sleep(0.4)' + '\n'
+            if line[0][-1] != ':': execText += '    '*line[1] + 'time.sleep(0.6)' + '\n'
             execText += '    '*line[1] + line[0] + '\n'
         
         if isMine:
@@ -144,6 +146,7 @@ class MainScene(Scene):
     def sandbox(self, player, enemy, text):
         def attack(val):
             enemy.getAttacked(val)
+            player.setAct(Act.ATTACK)
         def defence(val):
             player.shield += val
         try:

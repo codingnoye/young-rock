@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtCore import Qt, QRect, QPoint, QRectF
 
 class Drawable:
     def draw(self, ctx, location, size):
@@ -50,6 +50,16 @@ class CodeDrawable(Drawable):
                 qp.drawText(nowx, nowy, code[i:i+2])
                 nowx += fontSize * 2 * wSpacing
                 i += 2
+            elif code[i:i+4] == 'else':
+                qp.setPen(COND)
+                qp.drawText(nowx, nowy, code[i:i+4])
+                nowx += fontSize * 4 * wSpacing
+                i += 4
+            elif code[i:i+5] == 'while':
+                qp.setPen(COND)
+                qp.drawText(nowx, nowy, code[i:i+5])
+                nowx += fontSize * 5 * wSpacing
+                i += 5
             elif code[i:i+2] == 'in':
                 qp.setPen(COND)
                 qp.drawText(nowx, nowy, code[i:i+2])
@@ -109,18 +119,23 @@ class AnimatedImage(Drawable):
         for url in urls:
             self.pixmap.append(QPixmap(url))
 
-    def draw(self, ctx, location, size):
+    def draw(self, ctx, location, size, seeingRight = True):
         event = ctx[0]
         qp = ctx[1]
-        qp.drawPixmap(QRect(location[0], location[1], size[0], size[1]), self.pixmap[self.frame//1])
-    
+        if seeingRight:
+            qp.drawPixmap(QRect(location[0], location[1], size[0], size[1]), self.pixmap[int(self.frame)])
+        else:
+            qp.drawPixmap(QRect(location[0], location[1], size[0], size[1]), QPixmap.fromImage(self.pixmap[int(self.frame)].toImage().mirrored(horizontal = True, vertical = False)))
     def animate(self, i):
-        if self.frame+i >= len(pixmap):
-            self.frame = (self.frame+i) % len(pixmap)
-            return False
+        if self.frame+i >= len(self.pixmap):
+            self.frame = (self.frame+i) % len(self.pixmap)
+            return True
         else:
             self.frame = self.frame + i
-            return True
+            return False
+    
+    def reset(self):
+        self.frame = 0
             
 
 class Rect(Drawable):
@@ -176,11 +191,27 @@ class ShopDrawable(Drawable):
         qp.drawRect(location[0], location[1], size[0], size[1])
 
 class ShopButtonDrawable(Drawable):
+    def __init__(self, category=10):
+        super().__init__()
+        self.category = category
     def draw(self, ctx, location, size):
         event = ctx[0]
         qp = ctx[1]
         qp.setPen(QPen(QColor(200, 200, 200), 3))
-        qp.setBrush(QColor(30, 30, 30))
+        category = self.category
+        if category == 10:
+            color = QColor(30, 30, 30)
+        elif category == 0:
+            color = QColor(30, 30, 70)
+        elif category == 1 or category == 2:
+            color = QColor(30, 30, 120)
+        elif category == 3:
+            color = QColor(40, 40, 150)
+        elif category == 11:
+            color = QColor(80, 50, 30)
+        else:
+            color = QColor(100, 100, 100)
+        qp.setBrush(color)
         qp.drawRect(location[0], location[1], size[0], size[1])
     
     def drawWrap(self, ctx, location, size):
@@ -188,6 +219,13 @@ class ShopButtonDrawable(Drawable):
         qp = ctx[1]
         qp.setPen(QPen(QColor(200, 200, 200, 50), 3))
         qp.setBrush(QColor(200, 200, 200, 50))
+        qp.drawRect(location[0], location[1], size[0], size[1])
+    
+    def drawSold(self, ctx, location, size):
+        event = ctx[0]
+        qp = ctx[1]
+        qp.setPen(QPen(QColor(0, 0, 0, 200), 3))
+        qp.setBrush(QColor(0, 0, 0, 50))
         qp.drawRect(location[0], location[1], size[0], size[1])
 
 
