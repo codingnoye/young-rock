@@ -92,12 +92,15 @@ class MainScene(Scene):
         self.shop = Shop(self)
         self.shop.objid = self.addObject(self.shop)
         
+        self.turn = 0
+
         self.goShopping()
 
     def goShopping(self):
         self.shopping = True
         self.shopClock = Clock(self, (400, 50))
         self.shopClockId = self.addObject(self.shopClock)
+        self.shop.reset()
         self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
         self.shop.nowMoney = self.shop.maxMoney
         self.shop.reroll()
@@ -108,14 +111,15 @@ class MainScene(Scene):
     def shoppingThread(self):
         starttime = time.time()
         nowtime = time.time()
-        self.shop.reset()
-        while nowtime - starttime < 25:
+        timeLimit = 15 + min(20, 4*self.turn)
+        while nowtime - starttime < timeLimit:
             nowtime = time.time()
-            self.shopClock.time = int(25 - (nowtime - starttime))
+            self.shopClock.time = int(timeLimit - (nowtime - starttime))
             time.sleep(0.2)
         self.removeObject(self.shopClockId)
         self.shopping = False
         self.startBattle(ctx['imHost'])
+        self.turn += 1
 
     def draw(self, ctx):
         super().draw(ctx)
@@ -127,7 +131,8 @@ class MainScene(Scene):
     def blockUse(self, block, isMine):
         execText = ''
         for line in block.code:
-            execText += '    '*line[1] + 'time.sleep(0.4)' + '\n'
+            print(line)
+            if line[0][-1] != ':': execText += '    '*line[1] + 'time.sleep(0.4)' + '\n'
             execText += '    '*line[1] + line[0] + '\n'
         
         if isMine:

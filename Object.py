@@ -77,6 +77,7 @@ class Player(Object):
         self.effectOffset = (size[0]/2, 0)
         self.hpbar = HpDrawable(150, 30)
         self.alive = True
+        self.level = 1
     
     def getAttacked(self, damage):
         if self._evade>0:
@@ -102,23 +103,38 @@ class Player(Object):
         return self._evade
     @evade.setter
     def evade(self, newval):
-        if newval>self._evade:
-            self.showEffect('evade', '+' + str(newval - self._evade))
-        self._evade = newval
+        if newval<self._evade:
+            self.showEffect('evade', '👁-'+str(self._evade - newval))
+            self._evade = newval
+        elif newval>self._evade:
+            self.showEffect('evade', '👁+' + str(newval - self._evade))
+            self._evade = newval
 
     @property
     def power(self):
         return self._power
     @power.setter
     def power(self, newval):
-        self._power = newval if newval>0 else 0
+        newval = newval if newval>0 else 0
+        if newval<self._power:
+            self.showEffect('power', '💪-'+str(self._power - newval))
+            self._power = newval
+        elif newval>self._power:
+            self.showEffect('power', '💪+'+str(abs(self._power - newval)))
+            self._power = newval
 
     @property
     def armor(self):
         return self._armor
     @armor.setter
     def armor(self, newval):
-        self._armor = newval if newval>0 else 0
+        newval = newval if newval>0 else 0
+        if newval<self._armor:
+            self.showEffect('armor', '🛡-'+str(self._armor - newval))
+            self._armor = newval
+        elif newval>self._armor:
+            self.showEffect('armor', '🛡+'+str(abs(self._armor - newval)))
+            self._armor = newval
 
     @property
     def health(self):
@@ -155,9 +171,6 @@ class Player(Object):
         if effect == 'hurt':
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(255, 40, 40), 48)
             dmg.objid = self.scene.addObject(dmg)
-        elif effect == 'evade':
-            dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(10, 10, 200), 24)
-            dmg.objid = self.scene.addObject(dmg)
         elif effect == 'heal':
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(40, 255, 40), 48)
             dmg.objid = self.scene.addObject(dmg)
@@ -166,6 +179,15 @@ class Player(Object):
             dmg.objid = self.scene.addObject(dmg)
         elif effect == 'nothing':
             dmg = Dmg(self.scene, (self.location[0]+32, self.location[1]-32), text, QColor(170, 170, 170), 48)
+            dmg.objid = self.scene.addObject(dmg)
+        elif effect == 'power':
+            dmg = Dmg(self.scene, (self.location[0]-24, self.location[1]-32), text, QColor(255, 100, 100), 48)
+            dmg.objid = self.scene.addObject(dmg)
+        elif effect == 'armor':
+            dmg = Dmg(self.scene, (self.location[0]-24, self.location[1]-32), text, QColor(200, 200, 250), 48)
+            dmg.objid = self.scene.addObject(dmg)
+        elif effect == 'evade':
+            dmg = Dmg(self.scene, (self.location[0]-24, self.location[1]-32), text, QColor(0, 100, 250), 48)
             dmg.objid = self.scene.addObject(dmg)
     
     def draw(self, ctx):
@@ -212,52 +234,23 @@ class Block(Object):
         self.code = code
         self.fontSize = 16
         self.lineSpace = 1.5
-        self.text = []
-        
+        self.text = ''
+        self.codeDrawable = CodeDrawable()
         self.makeCode()
 
     def draw(self, ctx):
         super().draw(ctx)
-        i=0
-        for text in self.text:
-            Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
-            i+=1
+        self.codeDrawable.draw(ctx, (self.location[0]+30, self.location[1]+40))
     
     def drawWrap(self, ctx):
         self.drawable.drawWrap(ctx, self.location, self.size)
 
     def makeCode(self):
-        self.text = []
-        for c in self.code:
-            self.text += ['    ' * c[1] + c[0]]
-        self.size = (self.size[0], 80-self.fontSize + (len(self.code)-1)*self.fontSize*self.lineSpace)
-
-class Card(Object):
-    def __init__(self, scene,  location, size = (300, 90)):
-        super().__init__(scene, BlockDrawable(), location, size)
-        self.tracking = False
-        self.trackingXY = (0, 0)
-        self.code = []
         self.text = ''
-        self.makeCode()
-        self.fontSize = 16
-    
-    def update(self):
-        super().update()
-        if self.dragging:
-            self.location = (self.scene.mouse[0] - self.trackingXY[0], self.scene.mouse[1] - self.trackingXY[1])
-
-    def onPress(self):
-        super().onPress()
-        self.trackingXY = ((self.scene.mouse[0] - self.location[0], self.scene.mouse[1] - self.location[1]))
-
-    def draw(self, ctx):
-        super().draw(ctx)
-        Text(self.text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1]))
-
-    def makeCode(self):
         for c in self.code:
-            self.text += '    ' * c[1] + c[0] + '\n'
+            self.text += '    ' * c[1] + c[0]+'\n'
+        self.codeDrawable.setCode(self.text)
+        self.size = (self.size[0], 80-self.fontSize + (len(self.code)-1)*self.fontSize*self.lineSpace)
 
 class Shop(Object):
     def __init__(self, scene, location = (1600, 0), size = (980, 900)):
@@ -294,7 +287,6 @@ class Shop(Object):
         ]
         self.nowMoney = 2
         self.maxMoney = 2
-        self.level = 1
         self.reroll()
     def update(self):
         super().update()
@@ -314,7 +306,7 @@ class Shop(Object):
         for entity in self.entities:
             entity.draw(ctx)
     def reroll(self):
-        codes = Codes.giveCode(self.level)
+        codes = Codes.giveCode(self.scene.player.level)
         i=1;
         for c in codes:
             self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
@@ -359,7 +351,8 @@ class ShopBlock(ShopEntity):
         self.code = []
         self.fontSize = 16
         self.lineSpace = 1.5
-        self.text = []
+        self.text = ''
+        self.codeDrawable = CodeDrawable()
         self.makeCode()
         self.nowCost = 0
 
@@ -371,20 +364,15 @@ class ShopBlock(ShopEntity):
         pass
 
     def makeCode(self):
-        self.text = []
+        self.text = ''
         for c in self.code:
-            self.text += ['    ' * c[1] + c[0]]
+            self.text += '    ' * c[1] + c[0]+'\n'
         self.size = (self.size[0], 80-self.fontSize + (max(1, len(self.code))-1)*self.fontSize*self.lineSpace)
+        self.codeDrawable.setCode(self.text if len(self.text)>0 else '#empty')
 
     def draw(self, ctx):
         super().draw(ctx)
-        i=0
-        if len(self.text):
-            for text in self.text:
-                Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
-                i+=1
-        else:
-            Text('# empty', QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
+        self.codeDrawable.draw(ctx, (self.location[0]+30, self.location[1]+40))
 class ShopMoney(ShopEntity):
     def __init__(self, parent, offset):
         super().__init__(parent, None, (offset[0], offset[1]), (980, 99))
@@ -408,24 +396,27 @@ class ShopButton(ShopEntity):
 class ShopCodeButton(ShopButton):
     def __init__(self, parent, offset, code, cost):
         super().__init__(parent, offset)
+        self.drawable = ShopButtonDrawable()
+        self.codeDrawable = CodeDrawable()
         self.code = code
-        self.text = []
+        self.text = ''
         self.makeCode()
         self.lineSpace = 1.5
         self.cost = cost
+        self.selected = False
     def makeCode(self):
-        self.text = []
+        self.text = ''
         for c in self.code:
-            self.text += ['    ' * c[1] + c[0] + '\n']
+            self.text += '    ' * c[1] + c[0] + '\n'
+        self.codeDrawable.setCode(self.text)
     def draw(self, ctx):
         super().draw(ctx)
-        i=0
-        for text in self.text:
-            Text(text, QFont('D2Coding', self.fontSize), QColor(255, 255, 255)).draw(ctx, (30+self.location[0], 40+self.location[1] + self.fontSize*self.lineSpace*i))
-            i+=1
+        self.codeDrawable.draw(ctx, (self.location[0]+30, self.location[1]+40))
+        if self.selected:
+            self.drawable.drawWrap(ctx, self.location, self.size)
     def onClick(self):
-        if self.parent.nowIndent != 0 or len(self.parent.newBlock.code) == 0:
-            if self.parent.nowMoney >= self.cost:
+        if self.parent.nowIndent != 0 or self.code[-1][2] == 1:
+            if self.parent.nowMoney >= self.cost and not self.selected:
                 self.parent.newBlock.nowCost += self.cost
                 self.parent.nowMoney -= self.cost
                 for code in self.code:
@@ -433,6 +424,8 @@ class ShopCodeButton(ShopButton):
                 self.parent.newBlock.makeCode()
                 self.parent.nowIndent = self.code[-1][1] + self.parent.nowIndent + code[2]
                 self.parent.buyButton.cost = self.parent.newBlock.nowCost   
+                self.parent.buyButton.selected.append(self)
+                self.selected = True
 class ShopTextButton(ShopButton):
     def __init__(self, parent, offset, text=''):
         super().__init__(parent, offset)
@@ -446,6 +439,7 @@ class ShopBuyButton(ShopTextButton):
     def __init__(self, parent, offset, text):
         super().__init__(parent, offset, text)
         self.cost = 0
+        self.selected = []
     def onClick(self):
         super().onClick()
         if len(self.parent.newBlock.code)>0:
@@ -456,6 +450,7 @@ class ShopBuyButton(ShopTextButton):
             self.scene.sock.send(json.dumps((0, self.parent.newBlock.code)))
 
             self.parent.newBlock.code = []
+            self.selected = []
             self.parent.newBlock.makeCode()
             self.cost = 0
 class ShopUnindentButton(ShopTextButton):
@@ -494,6 +489,8 @@ class ShopResetButton(ShopTextButton):
     def onClick(self):
         super().onClick()
         self.reset()
+        while len(self.parent.buyButton.selected):
+            self.parent.buyButton.selected.pop().selected = False
     def reset(self):
         self.parent.reset()
 class ShopRerollButton(ShopTextButton):
@@ -514,9 +511,9 @@ class ShopLevelupButton(ShopTextButton):
         if self.cost != None:
             if self.parent.nowMoney >= self.cost:
                 self.parent.nowMoney -= self.cost
-                self.parent.level += 1
-                self.cost = self.parent.level * 2 - 1
-            if self.parent.level>=5:
+                self.parent.scene.player.level += 1
+                self.cost = self.parent.scene.player.level * 2 - 1
+            if self.parent.scene.player.level>=5:
                 self.cost = None
                 self.text = "MAX"        
 class ShopLockButton(ShopTextButton):

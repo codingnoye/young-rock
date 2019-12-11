@@ -19,6 +19,78 @@ class Text(Drawable):
         qp.setFont(self.font)
         qp.drawText(location[0], location[1], self.text)
 
+class CodeDrawable(Drawable):
+    def __init__(self):
+        super().__init__()
+        self.code = ''
+    def setCode(self, code):
+        self.code = code
+    def draw(self, ctx, location, size=None):
+        nowx = location[0]
+        i = 0
+        event = ctx[0]
+        qp = ctx[1]
+        COND = QColor("#D59DF6")
+        METHOD = QColor("#71B1FE")
+        NORM = QColor("#FFFFFF")
+        fontSize = 16
+        lineSpacing = 1.5
+        qp.setFont(QFont('D2Coding', fontSize))
+        wSpacing = 0.65
+        nowx = location[0]
+        nowy = location[1]
+        code = self.code
+        while i<len(code):
+            if code[i] == '\n':
+                nowx = location[0]
+                nowy += 1*lineSpacing*fontSize
+                i+=1
+            elif code[i:i+2] == 'if':
+                qp.setPen(COND)
+                qp.drawText(nowx, nowy, code[i:i+2])
+                nowx += fontSize * 2 * wSpacing
+                i += 2
+            elif code[i:i+2] == 'in':
+                qp.setPen(COND)
+                qp.drawText(nowx, nowy, code[i:i+2])
+                nowx += fontSize * 2 * wSpacing
+                i += 2
+            elif code[i:i+3] == 'for':
+                qp.setPen(COND)
+                qp.drawText(nowx, nowy, code[i:i+3])
+                nowx += fontSize * 3 * wSpacing
+                i += 3
+            elif code[i:i+5] == 'range':
+                qp.setPen(METHOD)
+                qp.drawText(nowx, nowy, code[i:i+5]) 
+                nowx += fontSize * 5 * wSpacing
+                i += 5
+            elif code[i:i+6] == 'attack':
+                qp.setPen(METHOD)
+                qp.drawText(nowx, nowy, code[i:i+6]) 
+                nowx += fontSize * 6 * wSpacing
+                i += 6
+            elif code[i:i+7] == 'defence':
+                qp.setPen(METHOD)
+                qp.drawText(nowx, nowy, code[i:i+7]) 
+                nowx += fontSize * 7 * wSpacing
+                i += 7
+            elif code[i:i+6] == 'player':
+                qp.setPen(METHOD)
+                qp.drawText(nowx, nowy, code[i:i+6]) 
+                nowx += fontSize * 6 * wSpacing
+                i += 6
+            elif code[i:i+5] == 'enemy':
+                qp.setPen(METHOD)
+                qp.drawText(nowx, nowy, code[i:i+5]) 
+                nowx += fontSize * 5 * wSpacing
+                i += 5
+            else:
+                qp.setPen(NORM)
+                qp.drawText(nowx, nowy, code[i:i+1]) 
+                nowx += fontSize * 1 * wSpacing
+                i += 1
+
 class Image(Drawable):
     def __init__(self, url):
         super().__init__()
@@ -43,7 +115,12 @@ class AnimatedImage(Drawable):
         qp.drawPixmap(QRect(location[0], location[1], size[0], size[1]), self.pixmap[self.frame//1])
     
     def animate(self, i):
-        self.frame = (self.frame+i) % len(pixmap)
+        if self.frame+i >= len(pixmap):
+            self.frame = (self.frame+i) % len(pixmap)
+            return False
+        else:
+            self.frame = self.frame + i
+            return True
             
 
 class Rect(Drawable):
