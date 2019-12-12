@@ -79,13 +79,14 @@ Code([('for j in range(2):', 0, 1)], 2, 1)
 Code([('if True:', 0, 1)], 2, 0)
 # 3코
 Code([('for j in range(i):', 0, 1)], 3, 1)
+Code([('for i in range(3):', 0, 1)], 3, 1)
 Code([('for j in range(3, 5):', 0, 1)], 3, 1)
-Code([('for i in range(enemy.level):', 0, 1)], 3, 1)
-Code([('for i in range(player.level):', 0, 1)], 3, 1)
 Code([('for i in range(4):', 0, 1), ('if player.health<50:', 1, 1)], 3, 2)
 # 4코
-Code([('for i in range(3):', 0, 1)], 4, 2)
-Code([('while player.shield>=5:', 0, 1), ('player.shiled-=5', 1, 0)], 4, 3)
+Code([('for i in range(4):', 0, 1)], 4, 2)
+Code([('while player.shield>=5:', 0, 1), ('player.shiled-=5', 1, 0)], 4, 2)
+Code([('for i in range(enemy.level):', 0, 1)], 4, 1)
+Code([('for i in range(player.level):', 0, 1)], 4, 1)
 Code([('if player.power<3:', 0, 1), ('for i in range(5):', 1, 1)], 4, 2)
 Code([('for i in range(5):', 0, 1), ('player.health -= 2', 1, 0)], 4, 2)
 # 5코

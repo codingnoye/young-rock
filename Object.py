@@ -575,7 +575,7 @@ class ShopCodeButton(ShopButton):
         if self.cost != None:
             CostDrawable(self.cost).draw(ctx, self.location)
     def onClick(self):
-        if self.parent.nowIndent != 0 or self.code[-1][2] == 1:
+        if self.parent.nowIndent != 0 or self.code[0][2] == 1:
             if self.parent.nowMoney >= self.cost and not self.selected and not self.sold:
                 self.parent.newBlock.nowCost += self.cost
                 self.parent.nowMoney -= self.cost
