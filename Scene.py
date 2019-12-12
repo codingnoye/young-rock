@@ -19,6 +19,7 @@ class Scene:
         self.objects = []
         self.mouse = (0, 0)
         self.dragging = False
+        self.backgroundPixmap = None
 
     def update(self):
         for obj in self.objects:
