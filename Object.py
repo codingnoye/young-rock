@@ -71,6 +71,19 @@ class Label(Object):
         super().draw(ctx)
         Text(self.text, QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)
 
+class TitleButton(Button):
+    def __init__(self, scene, text, callback, location):
+        super().__init__(scene, text, callback, location, size=(200,100))
+        self.drawable = TitleButtonDrawable()
+        self.fontSize = 36
+        self.xoffset = -self.fontSize*len(self.text)
+    def draw(self, ctx):
+        Text(self.text, QFont('Press Start 2P', self.fontSize), QColor(255, 255, 255)).draw(ctx, (50+self.location[0]+self.xoffset, self.location[1] + self.size[1]//2 + self.fontSize//2))
+    def onClick(self):
+        super().onClick()
+        self.xoffset = -self.fontSize*len(self.text)
+    def isHover(self):
+        return (self.scene.mouse[0] >= self.location[0]+self.xoffset and self.scene.mouse[1] >= self.location[1] and self.scene.mouse[0] <= self.location[0]+self.xoffset + self.size[0] and self.scene.mouse[1] <= self.location[1] + self.size[1])
 class Act(enum.IntEnum):
     IDLE = 0
     ATTACK = 1
@@ -101,6 +114,9 @@ class Player(Object):
             ActSprite[Act.RUN] = [
                 AnimatedImage(['./res/image/run/0.png', './res/image/run/1.png', './res/image/run/2.png', './res/image/run/3.png', './res/image/run/4.png', './res/image/run/5.png', './res/image/run/0.png', './res/image/run/1.png', './res/image/run/2.png', './res/image/run/3.png', './res/image/run/4.png', './res/image/run/5.png'])
                 ]
+            ActSprite[Act.EVADE] = [
+                AnimatedImage(['./res/image/evade/0.png', './res/image/evade/1.png', './res/image/evade/2.png', './res/image/evade/3.png', './res/image/evade/4.png'])
+                ]
             Player.first = False
         super().__init__(scene, ActSprite[Act.IDLE][0], location, size)
         self._health = 100
@@ -118,6 +134,7 @@ class Player(Object):
         if self._evade>0:
             self.showEffect('evade', 'Evade!')
             self._evade -= 1
+            self.setAct(Act.EVADE)
         else:
             if self._shield >= damage:
                 self._shield -= damage

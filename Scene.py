@@ -26,6 +26,7 @@ class Scene:
                 obj.update()
 
     def draw(self, ctx):
+        if self.backgroundPixmap != None: ctx[1].drawPixmap(0, 0, self.game.width(), self.game.height(), self.backgroundPixmap)
         for obj in self.objects:
             if obj != None:
                 obj.draw(ctx)
@@ -43,15 +44,93 @@ class Scene:
             if obj != None:
                 obj.event(e)
 
+class IntroScene(Scene):
+    def __init__(self):
+        super().__init__()
+        Scene.game.setStyleSheet("background-color:rgb(0, 0, 0);")
+
+    def draw(self, ctx):
+        super().draw(ctx)
+        
+    def event(self, e):
+        super().event(e)
+        if e=="press":
+            Scene.game.setScene(TitleScene())
+
 class TitleScene(Scene):
     def __init__(self):
         super().__init__()
-        Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
+        self.backgroundPixmap = QPixmap('./res/image/background.png')
         self.status = ""
-        self.addObject(Button(self, "HOST", self.host, (400, 500)))
-        self.addObject(Button(self, "JOIN", self.join, (900, 500)))
+        self.t = time.time()
+        self.i = 0
+        self.phase = 0
+        self.ani = self.animate()
+        threading.Thread(target=self.thread).start()
+        
+
+    def animate(self):
+        self.playerImage = Object(self, Image('./res/image/idle/0.png'), (-100-700, 250), (800, 600))
+        self.addObject(self.playerImage)
+        self.titleImage = Object(self, Image('./res/image/title2.png'), (850, 80-480), (650, 400))
+        self.addObject(self.titleImage)
+        self.phase = 1
+        yield None
+        self.playerImage.location = (-100, 250)
+        self.titleImage.location = (850,80)
+        host = threading.Thread(target=self.host).start
+        join = threading.Thread(target=self.join).start
+        self.hostButton = TitleButton(self, "HOST", host, (1320+600, 550))
+        self.addObject(self.hostButton)
+        self.joinButton = TitleButton(self, "JOIN", join, (1320+600, 650))
+        self.addObject(self.joinButton)
+        self.phase = 2
+        yield None
+        self.phase = 3
+        yield None
+        self.hostButton.location = (1320, 550)
+        self.joinButton.location = (1320, 650)
+        self.phase = 4
+        yield None
+
+    def thread(self):
+        ani = self.ani
+        while True:
+            if self.phase==0:
+                ani.__next__()
+            elif self.phase==1:
+                self.i = max(0, self.i)
+                self.playerImage.location = (self.playerImage.location[0] + 700/90, 250)
+                self.titleImage.location = (850, self.titleImage.location[1] + 480/90)
+                self.i+=1
+                if self.i>=90:
+                    ani.__next__()
+            elif self.phase==2:
+                self.i = max(90, self.i)
+                self.i+=1
+                if self.i>=120:
+                    ani.__next__()
+            elif self.phase==3:
+                self.i = max(120, self.i)
+                self.hostButton.location = (self.hostButton.location[0] - 600/60, 550)
+                self.joinButton.location = (self.joinButton.location[0] - 600/60, 650)
+                self.i+=1
+                if self.i>=180:
+                    ani.__next__()
+                    break
+            time.sleep(1/60)
+
+    def event(self, e):
+        super().event(e)
+        if e=="press":
+            if self.phase==1:
+                self.ani.__next__()
+                self.ani.__next__() 
+            elif self.phase<4:
+                self.ani.__next__() 
 
     def host(self):
+        self.hostButton.text = "WAITING"
         sock = Socket.Server()
         print('i am server')
         self.sock = sock
@@ -61,6 +140,7 @@ class TitleScene(Scene):
         Scene.game.setScene(MainScene())
     
     def join(self):
+        self.joinButton.text = "WAITING"
         sock = Socket.Client()
         print('i am client')
         self.sock = sock
@@ -72,8 +152,6 @@ class TitleScene(Scene):
 class MainScene(Scene):
     def __init__(self):
         super().__init__()
-        #Scene.game.setStyleSheet("background-color:rgb(150, 150, 150);");
-        #Scene.game.setStyleSheet("background-image: url(:./res/image/background.png);");
         self.backgroundPixmap = QPixmap('./res/image/background.png')
 
         self.sock = ctx['sock']
@@ -117,7 +195,7 @@ class MainScene(Scene):
     def shoppingThread(self):
         starttime = time.time()
         nowtime = time.time()
-        timeLimit = 15 + min(20, 4*self.turn)
+        timeLimit = 15 + min(25, 5*self.turn)
 
         while nowtime - starttime < timeLimit:
             nowtime = time.time()
@@ -134,7 +212,6 @@ class MainScene(Scene):
         self.startBattle(ctx['imHost'])
 
     def draw(self, ctx):
-        ctx[1].drawPixmap(0, 0, self.game.width(), self.game.height(), self.backgroundPixmap)
         super().draw(ctx)
         Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
 

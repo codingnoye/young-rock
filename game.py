@@ -58,7 +58,7 @@ if __name__ == '__main__':
     app = QApplication([])
     game = Game()
     Scene.game = game
-    game.setScene(TitleScene())
+    game.setScene(IntroScene())
     
     # start main loop
     thread = threading.Thread(target=game.loop)

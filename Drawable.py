@@ -174,6 +174,21 @@ class BlockDrawable(Drawable):
         qp.setPen(QPen(QColor(200, 200, 200, 50), 3))
         qp.setBrush(QColor(200, 200, 200, 50))
         qp.drawRect(location[0], location[1], size[0], size[1])
+
+class TitleButtonDrawable(Drawable):
+    def draw(self, ctx, location, size=(230, 100)):
+        event = ctx[0]
+        qp = ctx[1]
+        qp.setPen(QPen(QColor(0, 0, 0, 150), 3))
+        qp.setBrush(QColor(0, 0, 0, 150))
+        qp.drawRect(location[0], location[1], size[0], size[1])
+    
+    def drawWrap(self, ctx, location, size):
+        event = ctx[0]
+        qp = ctx[1]
+        qp.setPen(QPen(QColor(200, 200, 200, 50), 3))
+        qp.setBrush(QColor(200, 200, 200, 50))
+        qp.drawRect(location[0], location[1], size[0], size[1])
     
 class HpDrawable(Drawable):
     def __init__(self, width, height):
