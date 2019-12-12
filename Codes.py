@@ -85,7 +85,7 @@ Code([('for i in range(player.level):', 0, 1)], 3, 1)
 Code([('for i in range(4):', 0, 1), ('if player.health<50:', 1, 1)], 3, 2)
 # 4코
 Code([('for i in range(3):', 0, 1)], 4, 2)
-Code([('while player.shield>=5:', 0, 1), ('player.shiled-=5', 0, 0)], 4, 3)
+Code([('while player.shield>=5:', 0, 1), ('player.shiled-=5', 1, 0)], 4, 3)
 Code([('if player.power<3:', 0, 1), ('for i in range(5):', 1, 1)], 4, 2)
 Code([('for i in range(5):', 0, 1), ('player.health -= 2', 1, 0)], 4, 2)
 # 5코

@@ -78,6 +78,7 @@ class Act(enum.IntEnum):
     EVADE = 3
     HURT = 4
     DIE = 5
+    RUN = 6
 
 ActSprite = [[] for _ in range(len(Act))]
 class Player(Object):
@@ -90,8 +91,15 @@ class Player(Object):
                 AnimatedImage(['./res/image/attack/10.png', './res/image/attack/11.png', './res/image/attack/12.png', './res/image/attack/13.png', './res/image/attack/14.png', './res/image/attack/15.png']),
                 AnimatedImage(['./res/image/attack/20.png', './res/image/attack/21.png', './res/image/attack/22.png', './res/image/attack/23.png', './res/image/attack/24.png', './res/image/attack/25.png'])
                 ]
+            ActSprite[Act.HATTACK] = [
+                AnimatedImage(['./res/image/hard_attack/00.png', './res/image/hard_attack/00.png', './res/image/hard_attack/01.png', './res/image/hard_attack/02.png', './res/image/hard_attack/03.png']),
+                AnimatedImage(['./res/image/hard_attack/10.png', './res/image/hard_attack/10.png', './res/image/hard_attack/11.png', './res/image/hard_attack/11.png', './res/image/hard_attack/12.png'])
+                ]
             ActSprite[Act.HURT] = [
-                AnimatedImage(['./res/image/hurt/0.png', './res/image/hurt/1.png', './res/image/hurt/2.png'])
+                AnimatedImage(['./res/image/hurt/0.png', './res/image/hurt/1.png', './res/image/hurt/2.png', './res/image/hurt/2.png', './res/image/hurt/2.png', './res/image/hurt/2.png'])
+                ]
+            ActSprite[Act.RUN] = [
+                AnimatedImage(['./res/image/run/0.png', './res/image/run/1.png', './res/image/run/2.png', './res/image/run/3.png', './res/image/run/4.png', './res/image/run/5.png', './res/image/run/0.png', './res/image/run/1.png', './res/image/run/2.png', './res/image/run/3.png', './res/image/run/4.png', './res/image/run/5.png'])
                 ]
             Player.first = False
         super().__init__(scene, ActSprite[Act.IDLE][0], location, size)
@@ -103,8 +111,10 @@ class Player(Object):
         self.level = 1
         self.act = Act.IDLE
         self.seeingRight = True
+        self.df = 4/60
     
     def getAttacked(self, damage):
+        self.setAct(Act.HURT)
         if self._evade>0:
             self.showEffect('evade', 'Evade!')
             self._evade -= 1
@@ -112,11 +122,24 @@ class Player(Object):
             if self._shield >= damage:
                 self._shield -= damage
                 self.showEffect('defence', '-' + str(damage))
+                offset = 55
+                location = (self.location[0]-offset, self.location[1]-offset)
+                size = (self.size[0]+offset*2, self.size[1]+offset*2)
+                br = Barrier(self.scene, location, size)
+                br.objid = self.scene.addObject(br)
             else:
                 if self._shield > 0:
+                    offset = 55
+                    location = (self.location[0]-offset, self.location[1]-offset)
+                    size = (self.size[0]+offset*2, self.size[1]+offset*2)
+                    br = Barrier(self.scene, location, size)
+                    br.objid = self.scene.addObject(br)
+                    br.lifetime = 16
+                    br.drawable.frame = 16
+                    br.df = 0.5
                     damage -= self._shield
                     self._shield = 0
-                self.health -= max(damage-self._armor, 0)
+                self.setHealth(self.health-max(damage-self._armor, 0))
     def reset(self):
         self._shield = 0
         self._armor = 0
@@ -128,18 +151,30 @@ class Player(Object):
         return self._evade
     @evade.setter
     def evade(self, newval):
+        time.sleep(16/60)
+        self.setEvade(newval)
+        time.sleep(16/60)
+
+    def setEvade(self, newval):
         if newval<self._evade:
             self.showEffect('evade', '👁-'+str(self._evade - newval))
             self._evade = newval
         elif newval>self._evade:
             self.showEffect('evade', '👁+' + str(newval - self._evade))
             self._evade = newval
+        else:
+            self.showEffect('evade', '👁+'+str(0))
 
     @property
     def power(self):
         return self._power
     @power.setter
     def power(self, newval):
+        time.sleep(16/60)
+        self.setPower(newval)
+        time.sleep(16/60)
+    
+    def setPower(self, newval):
         newval = newval if newval>0 else 0
         if newval<self._power:
             self.showEffect('power', '💪-'+str(self._power - newval))
@@ -147,12 +182,19 @@ class Player(Object):
         elif newval>self._power:
             self.showEffect('power', '💪+'+str(abs(self._power - newval)))
             self._power = newval
+        else:
+            self.showEffect('power', '💪+'+str(0))
 
     @property
     def armor(self):
         return self._armor
     @armor.setter
     def armor(self, newval):
+        time.sleep(16/60)
+        self.setArmor(newval)
+        time.sleep(16/60)
+
+    def setArmor(self, newval):
         newval = newval if newval>0 else 0
         if newval<self._armor:
             self.showEffect('armor', '🛡-'+str(self._armor - newval))
@@ -160,6 +202,8 @@ class Player(Object):
         elif newval>self._armor:
             self.showEffect('armor', '🛡+'+str(abs(self._armor - newval)))
             self._armor = newval
+        else:
+            self.showEffect('armor', '🛡+'+str(0))
 
     @property
     def health(self):
@@ -167,6 +211,11 @@ class Player(Object):
 
     @health.setter
     def health(self, newval):
+        time.sleep(16/60)
+        self.setHealth(newval)
+        time.sleep(16/60)
+    
+    def setHealth(self, newval):
         if newval>100: newval = 100
         if newval<self._health:
             self.showEffect('hurt', self._health - newval)
@@ -184,12 +233,19 @@ class Player(Object):
 
     @shield.setter
     def shield(self, newval):
+        time.sleep(16/60)
+        self.setShield(newval)
+        time.sleep(16/60)
+    
+    def setShield(self, newval):
         if newval<self._shield:
             self.showEffect('defence', self._shield - newval)
             self._shield = newval
         elif newval>self._shield:
             self.showEffect('defence', '+'+str(abs(self._shield - newval)))
             self._shield = newval
+        else:
+            self.showEffect('nothing', 0)
 
     def showEffect(self, effect, text):
         if type(text) != str: text = str(text)
@@ -214,6 +270,7 @@ class Player(Object):
         elif effect == 'evade':
             dmg = Dmg(self.scene, (self.location[0]-24, self.location[1]-32), text, QColor(0, 100, 250), 48)
             dmg.objid = self.scene.addObject(dmg)
+        
     
     def draw(self, ctx):
         xoffset = 50
@@ -227,18 +284,34 @@ class Player(Object):
             else:
                 self.drawable.draw(ctx, location, size, False)
 
-        if self.drawable.animate(8/60):
+        if self.drawable.animate(self.df):
             if self.act == Act.IDLE:
                 self.setAct(Act.IDLE)
             elif self.act == Act.ATTACK:
                 self.setAct(Act.IDLE)
+            elif self.act == Act.HATTACK:
+                self.setAct(Act.IDLE)
+            elif self.act == Act.HURT:
+                self.setAct(Act.IDLE)
+            elif self.act == Act.RUN:
+                self.setAct(Act.IDLE)
 
-        self.hpbar.draw(ctx, (self.location[0]+50-75, self.location[1]-70), (150*self.health/100, None))
-        Text(str(self.health), QFont('D2Coding', 24), QColor(255, 255, 255)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-70+26))
-        if self._shield>0: Text('+'+str(self._shield), QFont('D2Coding', 24), QColor(200, 200, 200)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-70+26)) 
+        self.hpbar.draw(ctx, (self.location[0]+50-75, self.location[1]-50), (150*self.health/100, None))
+        Text(str(self.health), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(0, 0, 0)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-50+24))
+        if self._shield>0: Text('+'+str(self._shield), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(40, 40, 40)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-50+24)) 
 
     def setAct(self, act):
         self.drawable = random.choice(ActSprite[act])
+        if act == Act.IDLE:
+            self.df = 4/60
+        elif act == Act.ATTACK:
+            self.df = 10/60
+        elif act == Act.HATTACK:
+            self.df = 10/60
+        elif act == Act.RUN:
+            self.df = 12/60
+        elif act == Act.HURT:
+            self.df = 8/60
         self.drawable.reset()
 
 class Scroll(Object):
@@ -276,6 +349,19 @@ class Dmg(Object):
     def draw(self, ctx):
         if self.lifetime>0:
             super().draw(ctx)
+
+class Barrier(Object):
+    def __init__(self, scene, location, size):
+        super().__init__(scene, BarrierDrawable(), location, size)
+        self.lifetime = 0
+        self.df = 1
+    def update(self):
+        self.lifetime += self.df
+        if self.lifetime>=20:
+            self.scene.removeObject(self.objid)
+    def draw(self, ctx):
+        super().draw(ctx)
+        self.drawable.animate(self.df)
 
 class Block(Object):
     def __init__(self, scene, location, code = []):

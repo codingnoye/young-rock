@@ -136,7 +136,14 @@ class AnimatedImage(Drawable):
     
     def reset(self):
         self.frame = 0
-            
+
+class BarrierDrawable(AnimatedImage):
+    def __init__(self):
+        super().__init__([f'./res/image/shield/pipo-btleffect207_192-{i}.png' for i in range(20)])
+    def draw(self, ctx, location, size):
+        ctx[1].setOpacity(0.45)
+        super().draw(ctx, location, size)
+        ctx[1].setOpacity(1)
 
 class Rect(Drawable):
     def draw(self, ctx, location, size):

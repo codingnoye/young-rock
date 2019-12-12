@@ -91,6 +91,7 @@ class MainScene(Scene):
         self.enemy = Player(self, (1050, 700), (100, 100))
         self.enemy.seeingRight = False
         self.enemy.objid = self.addObject(self.enemy)
+        self.enemyOrigin = self.enemy.location[:]
 
         self.shopping = True
         self.shop = Shop(self)
@@ -118,11 +119,15 @@ class MainScene(Scene):
         nowtime = time.time()
         timeLimit = 15 + min(20, 4*self.turn)
 
-        print(self.turn, timeLimit)
         while nowtime - starttime < timeLimit:
             nowtime = time.time()
             self.shopClock.time = int(timeLimit - (nowtime - starttime))
-            time.sleep(0.2)
+            if self.turn != 0:
+                self.enemy.setAct(Act.RUN)
+                self.enemy.seeingRight = True
+                self.enemy.location = (self.enemy.location[0] + 7, self.enemy.location[1])
+            time.sleep(1/60)
+        self.enemy.seeingRight = False
         self.removeObject(self.shopClockId)
         self.shopping = False
         self.turn += 1
@@ -139,8 +144,6 @@ class MainScene(Scene):
     def blockUse(self, block, isMine):
         execText = ''
         for line in block.code:
-            print(line)
-            if line[0][-1] != ':': execText += '    '*line[1] + 'time.sleep(0.6)' + '\n'
             execText += '    '*line[1] + line[0] + '\n'
         
         if isMine:
@@ -151,8 +154,8 @@ class MainScene(Scene):
     # @thread
     def sandbox(self, player, enemy, text):
         def attack(val):
-            player.setAct(Act.ATTACK)
-            time.sleep(8/60*2)
+            player.setAct(Act.ATTACK) if val<10 else player.setAct(Act.HATTACK)
+            time.sleep(player.df*3)
             enemy.getAttacked(val)
         def defence(val):
             player.shield += val
@@ -167,6 +170,12 @@ class MainScene(Scene):
 
     # @thread
     def battle(self, first):
+        self.enemy.setAct(Act.RUN)
+        self.enemy.location = self.enemyOrigin[:]
+        
+        for i in range(60):
+            self.enemy.location = (self.enemy.location[0] - 7, self.enemy.location[1])
+            time.sleep(1/60)
         myturn = first
         blocki = [0, 0]
         while blocki[0] < len(self.scroll.blocks) or blocki[1] < len(self.enemyScroll.blocks):
