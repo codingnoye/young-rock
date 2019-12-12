@@ -602,7 +602,7 @@ class ShopBuyButton(ShopTextButton):
         self.selected = []
     def onClick(self):
         super().onClick()
-        if len(self.parent.newBlock.code)>0:
+        if len(self.parent.newBlock.code)>0 and len(self.parent.scene.scroll.blocks)<5:
             self.parent.nowIndent = 0
             self.parent.newBlock.nowCost = 0
             self.scene.scroll.addBlock(Block(self.scene, (40, 40), self.parent.newBlock.code))
