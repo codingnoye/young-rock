@@ -2,6 +2,10 @@ import socket
 import threading
 
 SERVER = ('', 3005)
+TARGET = ('', 3005)
+with open('./config') as cfg:
+    data = tuple(map(lambda x:x.strip(), cfg.readlines()))
+    TARGET = (data[0], int(data[1]))
 
 class Socket:
     def recv(self, callback):
@@ -33,7 +37,7 @@ class Server(Socket):
         self._sv_sock.bind(SERVER)
     # Thread
     def connect(self):
-        print('Listening...')
+        print(f'Listening at {SERVER}...')
         self._sv_sock.listen()
         self._sock, self._addr = self._sv_sock.accept()
         print(f'Connected by {self._sock.getsockname()}')
@@ -46,6 +50,6 @@ class Client(Socket):
         self._sock = None
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     def connect(self):
-        print('Connecting...')
-        self._sock.connect(SERVER)
-        print(f'Connected to {self._sock.getsockname()}')
+        print(f'Connecting to {TARGET}...')
+        self._sock.connect(TARGET)
+        print(f'Connected to {TARGET} with {self._sock.getsockname()}')
