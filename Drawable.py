@@ -19,6 +19,14 @@ class Text(Drawable):
         qp.setFont(self.font)
         qp.drawText(location[0], location[1], self.text)
 
+class CenterText(Text):
+    def draw(self, ctx, location, size=None):
+        event = ctx[0]
+        qp = ctx[1]
+        qp.setPen(self.color)
+        qp.setFont(self.font)
+        qp.drawText(QRect(0, 0, 1600, 900), Qt.AlignCenter, self.text)
+
 class CodeDrawable(Drawable):
     def __init__(self):
         super().__init__()

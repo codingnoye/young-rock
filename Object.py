@@ -75,6 +75,15 @@ class Label(Object):
         super().draw(ctx)
         Text(self.text, QFont('NotoMono', 48), QColor(255, 255, 255)).draw(ctx, self.location)
 
+class IntroNaration(Object):
+    def __init__(self, scene, text, location, size=(0, 0)):
+        super().__init__(scene, None, location, size)
+        self.text = text
+        self.alpha = 0
+    
+    def draw(self, ctx):
+        CenterText(self.text, QFont('Noto Serif', 32), QColor(255, 255, 255, alpha=self.alpha)).draw(ctx, (self.location[0], self.location[1]), self.size)
+
 class TitleButton(Button):
     def __init__(self, scene, text, callback, location):
         super().__init__(scene, text, callback, location, size=(200,100))
@@ -96,6 +105,7 @@ class Act(enum.IntEnum):
     HURT = 4
     DIE = 5
     RUN = 6
+    TRUEDAMAGE = 7
 
 ActSprite = [[] for _ in range(len(Act))]
 class Player(Object):
@@ -121,6 +131,9 @@ class Player(Object):
             ActSprite[Act.EVADE] = [
                 AnimatedImage(['./res/image/evade/0.png', './res/image/evade/1.png', './res/image/evade/2.png', './res/image/evade/3.png', './res/image/evade/4.png'])
                 ]
+            ActSprite[Act.TRUEDAMAGE] = [
+                AnimatedImage(['./res/image/true_damage/0.png', './res/image/true_damage/1.png', './res/image/true_damage/2.png', './res/image/true_damage/3.png', './res/image/true_damage/4.png', './res/image/true_damage/5.png', './res/image/true_damage/6.png', './res/image/true_damage/7.png'])
+                ]
             Player.first = False
         super().__init__(scene, ActSprite[Act.IDLE][0], location, size)
         self._health = 100
@@ -132,6 +145,8 @@ class Player(Object):
         self.act = Act.IDLE
         self.seeingRight = True
         self.df = 4/60
+        self.nowTurn = False
+        self.enemy = None
     
     def getAttacked(self, damage):
         self.setAct(Act.HURT)
@@ -140,7 +155,7 @@ class Player(Object):
             self._evade -= 1
             self.setAct(Act.EVADE)
         else:
-            if self._shield >= damage:
+            if self._shield >= damage and self._shield>0:
                 self._shield -= damage
                 self.showEffect('defence', '-' + str(damage))
                 offset = 55
@@ -160,7 +175,7 @@ class Player(Object):
                     br.df = 0.5
                     damage -= self._shield
                     self._shield = 0
-                self.setHealth(self.health-max(damage-self._armor, 0))
+                self.setHealth(self.health-max(damage-self._armor, 0), trueDamage = False)
     def reset(self):
         self._shield = 0
         self._armor = 0
@@ -236,7 +251,10 @@ class Player(Object):
         self.setHealth(newval)
         time.sleep(16/60)
     
-    def setHealth(self, newval):
+    def setHealth(self, newval, trueDamage = True):
+        if trueDamage and not self.nowTurn:
+            self.enemy.setAct(Act.TRUEDAMAGE)
+            self.setAct(Act.HURT)
         if newval>100: newval = 100
         if newval<self._health:
             self.showEffect('hurt', self._health - newval)
@@ -318,8 +336,21 @@ class Player(Object):
                 self.setAct(Act.IDLE)
 
         self.hpbar.draw(ctx, (self.location[0]+50-75, self.location[1]-50), (150*self.health/100, None))
-        Text(str(self.health), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(0, 0, 0)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-50+24))
-        if self._shield>0: Text('+'+str(self._shield), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(40, 40, 40)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-50+24)) 
+        Text(str(self.health), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(255, 255, 255)).draw(ctx, (self.location[0]+50-75+10, self.location[1]-50+24))
+        if self._shield>0: Text('+'+str(self._shield), QFont('Noto Mono', 18, weight=QFont.Bold), QColor(190, 190, 190)).draw(ctx, (self.location[0]+50-75+100, self.location[1]-50+24)) 
+        
+        buffX = self.location[0]+50-75
+        buffY = self.location[1]-70
+        buffFontSize = 18
+        if self.power > 0:
+            Text('💪'+str(self.power), QFont('Noto Mono', buffFontSize, weight=QFont.Bold), QColor(255, 255, 255)).draw(ctx, (buffX, buffY))
+            buffX += buffFontSize*3
+        if self.armor > 0:
+            Text('🛡'+str(self.armor), QFont('Noto Mono', buffFontSize, weight=QFont.Bold), QColor(255, 255, 255)).draw(ctx, (buffX, buffY))
+            buffX += buffFontSize*3
+        if self.evade > 0:
+            Text('👁'+str(self.evade), QFont('Noto Mono', buffFontSize, weight=QFont.Bold), QColor(255, 255, 255)).draw(ctx, (buffX, buffY))
+            buffX += buffFontSize*3
 
     def setAct(self, act):
         self.drawable = random.choice(ActSprite[act])
@@ -333,6 +364,8 @@ class Player(Object):
             self.df = 12/60
         elif act == Act.HURT:
             self.df = 8/60
+        elif act == Act.TRUEDAMAGE:
+            self.df = 24/60
         self.drawable.reset()
 
 class Scroll(Object):

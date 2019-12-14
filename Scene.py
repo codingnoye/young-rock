@@ -49,10 +49,58 @@ class IntroScene(Scene):
     def __init__(self):
         super().__init__()
         Scene.game.setStyleSheet("background-color:rgb(0, 0, 0);")
+        n0 = IntroNaration(self, '영원한 젊음을 가져다 준다는 돌', (620, 500))
+        self.addObject(n0)
+        n1 = IntroNaration(self, 'Young Rock', (620, 500))
+        self.addObject(n1)
+        n2 = IntroNaration(self, '그 돌을 찾기 위해 온', (620, 500))
+        self.addObject(n2)
+        n3 = IntroNaration(self, '두 모험가의 승부가 시작된다.', (620, 500))
+        self.addObject(n3)
+        self.naration = [n0, n1, n2, n3]
+        self.frame = 0
 
     def draw(self, ctx):
         super().draw(ctx)
+        n0, n1, n2, n3 = self.naration
+        timing = (30, 60, 90, 60, 60, 90, 60, 60, 90, 60, 60, 110, 90)
+        now = 0
+        if self.frame<sum(timing[:1]):
+            pass
+
+        elif self.frame<sum(timing[:2]):
+            n0.alpha = min(n0.alpha+7, 255)
+        elif self.frame<sum(timing[:3]):
+            n0.alpha = 255
+        elif self.frame<sum(timing[:4]):
+            n0.alpha = max(n0.alpha-7, 0)
+
+        elif self.frame<sum(timing[:5]):
+            n1.alpha = min(n1.alpha+7, 255)
+        elif self.frame<sum(timing[:6]):
+            n1.alpha = 255
+        elif self.frame<sum(timing[:7]):
+            n1.alpha = max(n1.alpha-7, 0)
         
+        elif self.frame<sum(timing[:8]):
+            n2.alpha = min(n2.alpha+7, 255)
+        elif self.frame<sum(timing[:9]):
+            n2.alpha = 255
+        elif self.frame<sum(timing[:10]):
+            n2.alpha = max(n2.alpha-7, 0)
+        
+        elif self.frame<sum(timing[:11]):
+            n3.alpha = min(n3.alpha+7, 255)
+        elif self.frame<sum(timing[:12]):
+            n3.alpha = 255
+        elif self.frame<sum(timing[:13]):
+            n3.alpha = max(n3.alpha-7, 0)
+
+        else:
+            Scene.game.setScene(TitleScene())
+
+        self.frame+=1
+
     def event(self, e):
         super().event(e)
         if e=="press":
@@ -73,6 +121,9 @@ class TitleScene(Scene):
         self.playerImage = Object(self, Image('./res/image/idle/0.png'), (-100-700, 250), (800, 600))
         self.addObject(self.playerImage)
         self.titleImage = Object(self, Image('./res/image/title2.png'), (850, 80-480), (650, 400))
+        def debugOn():
+            if self.titleImage.isHover(): Scene.game.debug = True
+        self.titleImage.onPress = debugOn
         self.addObject(self.titleImage)
         self.phase = 1
         yield None
@@ -163,6 +214,17 @@ class MainScene(Scene):
         self.enemyScroll = Scroll(self, (1240, 20), (340, 860))
         self.enemyScroll.objid = self.addObject(self.enemyScroll)
 
+        if Scene.game.debug:
+            #self.scroll.addBlock(Block(self, (0, 0), [('player.power=3', 0), ('player.evade=3', 0), ('player.armor=3', 0)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('attack(2)', 1)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('player.power+=3', 1), ('attack(player.power)', 1)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('enemy.health-=4', 1)]))
+
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('if enemy.health>90:', 0), ('player.evade = 1', 1), ('defence(2)', 1)]))
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('player.armor+=2', 1), ('player.power+=1', 1)]))
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(3,5):', 0), ('for j in range(i):', 1), ('defence(4)', 2)]))
+            
+
         self.player = Player(self, (450, 700), (100, 100))
         self.player.objid = self.addObject(self.player)
 
@@ -170,6 +232,9 @@ class MainScene(Scene):
         self.enemy.seeingRight = False
         self.enemy.objid = self.addObject(self.enemy)
         self.enemyOrigin = self.enemy.location[:]
+
+        self.player.enemy = self.enemy
+        self.enemy.enemy = self.player
 
         self.shopping = True
         self.shop = Shop(self)
@@ -187,6 +252,7 @@ class MainScene(Scene):
         self.shop.reset()
         self.shop.buyButton.selected = []
         self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
+        if Scene.game.debug: self.shop.maxMoney = 100
         self.shop.nowMoney = self.shop.maxMoney
         thread = threading.Thread(target=self.shoppingThread, args=())
         thread.start()
@@ -213,7 +279,7 @@ class MainScene(Scene):
 
     def draw(self, ctx):
         super().draw(ctx)
-        Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
+        if Scene.game.debug: Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
 
     def event(self, e):
         super().event(e)
@@ -227,19 +293,32 @@ class MainScene(Scene):
             self.sandbox(self.player, self.enemy, execText)
         else:
             self.sandbox(self.enemy, self.player, execText)
+        
+        if self.player.health == 0:
+            Scene.game.won = False
+            Scene.game.setScene(GameOverScene())
+        elif self.enemy.health == 0:
+            Scene.game.won = True
+            Scene.game.setScene(GameOverScene())
 
     # @thread
     def sandbox(self, player, enemy, text):
-        def attack(val):
-            player.setAct(Act.ATTACK) if val<10 else player.setAct(Act.HATTACK)
-            time.sleep(player.df*3)
-            enemy.getAttacked(val)
+        player.nowTurn = True
+        def attack(*vals):
+            if len(vals) == 1:
+                val = vals[0]
+                player.setAct(Act.ATTACK) if val<10 else player.setAct(Act.HATTACK)
+                time.sleep(player.df*3)
+                enemy.getAttacked(val)
+            else: 
+                for val in vals: attack(val)
         def defence(val):
             player.shield += val
         try:
             exec(text, globals(), locals())
         except SyntaxError:
-            pass
+            player.setHealth(player.health - 10, False)
+        player.nowTurn = False
 
     def startBattle(self, first):
         thread = threading.Thread(target=self.battle, args=([first]))
@@ -288,3 +367,11 @@ class MainScene(Scene):
             self.enemyScroll.blocks.pop(0)
         elif code == 4: # level
             self.enemy.level = data
+
+class GameOverScene(Scene):
+    def __init__(self):
+        super().__init__()
+        Scene.game.setStyleSheet("background-color:rgb(0, 0, 0);")
+        won = IntroNaration(self, '이겼다' if Scene.game.won else '졌다', (620, 500))
+        self.addObject(won)
+        won.alpha = 255

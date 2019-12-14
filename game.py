@@ -8,6 +8,7 @@ from Object import Object
 from Drawable import Drawable, Image
 from Scene import *
 
+'Font: Noto Mono, D2Coding, Press Start 2P'
 class Game(QWidget):
     def __init__(self):
         super().__init__()
@@ -15,6 +16,8 @@ class Game(QWidget):
         self.setMouseTracking(True)
         self.setMaximumSize(1600, 900)
         self.scene = None
+        self.debug = False
+        self.won = False
     
     def setScene(self, scene):
         self.scene = scene
