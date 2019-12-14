@@ -2,11 +2,15 @@ from Drawable import *
 import time
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 import Codes
 import Socket
 import json
 import enum
 import random
+import sys
+import threading
 
 class Object:
     def __init__(self, scene, drawable, location, size):

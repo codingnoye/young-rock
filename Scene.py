@@ -68,7 +68,6 @@ class TitleScene(Scene):
         self.phase = 0
         self.ani = self.animate()
         threading.Thread(target=self.thread).start()
-        
 
     def animate(self):
         self.playerImage = Object(self, Image('./res/image/idle/0.png'), (-100-700, 250), (800, 600))
