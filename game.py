@@ -20,14 +20,6 @@ class Game(QWidget):
         self.won = False
         self.thread = None
         self.isRunning = True
-
-        QSound.play('qrc:./sound/battle.mp3')
-        '''
-        self.sound = QSoundEffect()
-        self.sound.setSource(QUrl('./sound2/shop.wav'))
-        self.sound.setVolume(0.5)
-        self.sound.setLoopCount(1)
-        '''
     
     def setScene(self, scene):
         self.scene = scene
