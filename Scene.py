@@ -376,6 +376,13 @@ class GameOverScene(Scene):
     def __init__(self):
         super().__init__()
         Scene.game.setStyleSheet("background-color:rgb(0, 0, 0);")
-        won = IntroNaration(self, '이겼다' if Scene.game.won else '졌다', (620, 500))
-        self.addObject(won)
+        if Scene.game.won:
+            won = IntroNaration(self, 'You Win!', (620, 500))
+            self.addObject(won)
+        else:
+            won = IntroNaration(self, 'You Lose', (620, 500))
+            self.addObject(won)
         won.alpha = 255
+    def draw(self, ctx):
+        super().draw(ctx)
+        Image('res/image/jewel.png').draw(ctx, (700,450), (200,200))
