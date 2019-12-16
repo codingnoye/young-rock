@@ -1,6 +1,7 @@
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtCore import Qt, QRect, QPoint, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
+from PyQt5.QtMultimedia import QAudio, QAudioDeviceInfo, QAudioFormat, QAudioOutput, QSound, QSoundEffect
 import threading, time, sys
 
 from Scene import * # 게임의 각 화면을 구성하는 Scene
@@ -20,6 +21,14 @@ class Game(QWidget):
         self.won = False
         self.thread = None
         self.isRunning = True
+
+        QSound.play('qrc:./sound/battle.mp3')
+        '''
+        self.sound = QSoundEffect()
+        self.sound.setSource(QUrl('./sound2/shop.wav'))
+        self.sound.setVolume(0.5)
+        self.sound.setLoopCount(1)
+        '''
     
     def setScene(self, scene):
         self.scene = scene

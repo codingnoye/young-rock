@@ -281,7 +281,7 @@ class MainScene(Scene):
 
     def draw(self, ctx):
         super().draw(ctx)
-        if Scene.game.debug: Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
+        #if Scene.game.debug: Text(str(self.mouse), QFont('D2Coding', 32), QColor(255, 255, 255)).draw(ctx, (50, 50))
 
     def event(self, e):
         super().event(e)
@@ -356,6 +356,7 @@ class MainScene(Scene):
         self.goShopping()
 
     def sockRecv(self, recv):
+        #print('"'+recv+'"')
         code, data = json.loads(recv)
         if code == 0: # buy
             self.enemyScroll.addBlock(Block(self, (40, 40), data))

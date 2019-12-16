@@ -615,6 +615,7 @@ class ShopCodeButton(ShopButton):
                     self.parent.newBlock.code.append((code[0], code[1]+self.parent.nowIndent))
                 self.parent.newBlock.makeCode()
                 self.parent.nowIndent = self.code[-1][1] + self.parent.nowIndent + code[2]
+                if self.parent.nowIndent <= 0 and code[2]==-1: self.parent.nowIndent = 1
                 self.parent.buyButton.cost = self.parent.newBlock.nowCost   
                 self.parent.buyButton.selected.append(self)
                 self.selected = True
