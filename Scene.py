@@ -64,7 +64,7 @@ class IntroScene(Scene):
     def draw(self, ctx):
         super().draw(ctx)
         n0, n1, n2, n3 = self.naration
-        timing = (300, 60, 90, 60, 60, 90, 60, 60, 90, 60, 60, 110, 90)
+        timing = (30, 60, 90, 60, 60, 90, 60, 60, 90, 60, 60, 110, 90)
         now = 0
         if self.frame<sum(timing[:1]):
             pass
@@ -215,18 +215,7 @@ class MainScene(Scene):
         self.scroll.objid = self.addObject(self.scroll)
 
         self.enemyScroll = Scroll(self, (1240, 20), (340, 860))
-        self.enemyScroll.objid = self.addObject(self.enemyScroll)
-
-        if Scene.game.debug:
-            #self.scroll.addBlock(Block(self, (0, 0), [('player.power=3', 0), ('player.evade=3', 0), ('player.armor=3', 0)]))
-            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('attack(2)', 1)]))
-            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('player.power+=3', 1), ('attack(player.power)', 1)]))
-            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('enemy.health-=4', 1)]))
-
-            self.enemyScroll.addBlock(Block(self, (0, 0), [('if enemy.health>90:', 0), ('player.evade = 1', 1), ('defence(2)', 1)]))
-            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('player.armor+=2', 1), ('player.power+=1', 1)]))
-            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(3,5):', 0), ('for j in range(i):', 1), ('defence(4)', 2)]))
-            
+        self.enemyScroll.objid = self.addObject(self.enemyScroll)    
 
         self.player = Player(self, (450, 700), (100, 100))
         self.player.objid = self.addObject(self.player)
@@ -235,6 +224,19 @@ class MainScene(Scene):
         self.enemy.seeingRight = False
         self.enemy.objid = self.addObject(self.enemy)
         self.enemyOrigin = self.enemy.location[:]
+
+        if Scene.game.debug:
+            self.player._health = 24
+            self.enemy._health = 33
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('attack(4)', 1)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('player.power+=3', 1), ('attack(player.power)', 1)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('player.power*=2', 1), ('player.power*=2', 1), ('attack(player.power)', 1)]))
+            self.scroll.addBlock(Block(self, (0, 0), [('if enemy.shield>10:', 0), ('for i in range(6):', 1), ('enemy.health-=4', 2)]))
+
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(3):', 0), ('defence(2)', 1), ('attack(4)', 1)]))
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(4):', 0), ('player.armor+=1', 1), ('enemy.health-=1', 1)]))
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(2):', 0), ('player.evade+=1', 1), ('player.power+=5', 1)]))
+            self.enemyScroll.addBlock(Block(self, (0, 0), [('for i in range(5):', 0), ('player.evade+=1', 1), ('player.armor+=3', 1), ('defence(5)', 1), ('defence(player.shield)', 1)]))
 
         self.player.enemy = self.enemy
         self.enemy.enemy = self.player
