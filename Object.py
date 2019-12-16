@@ -362,7 +362,7 @@ class Player(Object):
         elif act == Act.HURT:
             self.df = 8/60
         elif act == Act.TRUEDAMAGE:
-            self.df = 24/60
+            self.df = 16/60
         self.drawable.reset()
 
 class Scroll(Object):
