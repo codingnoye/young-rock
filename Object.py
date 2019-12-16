@@ -6,11 +6,7 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 import Codes
 import Socket
-import json
-import enum
-import random
-import sys
-import threading
+import json, enum, random, sys
 
 class Object:
     def __init__(self, scene, drawable, location, size):
@@ -97,6 +93,7 @@ class TitleButton(Button):
         self.xoffset = -self.fontSize*len(self.text)
     def isHover(self):
         return (self.scene.mouse[0] >= self.location[0]+self.xoffset and self.scene.mouse[1] >= self.location[1] and self.scene.mouse[0] <= self.location[0]+self.xoffset + self.size[0] and self.scene.mouse[1] <= self.location[1] + self.size[1])
+
 class Act(enum.IntEnum):
     IDLE = 0
     ATTACK = 1
@@ -522,7 +519,6 @@ class Shop(Object):
             c.selected = False
             #self.entities[i] = ShopCodeButton(self, self.entities[i].offset, c.code, c.cost)
             i+=1
-
 class ShopEntity(Object):
     def __init__(self, parent, drawable, offset, size):
         super().__init__(parent.scene, ShopButtonDrawable(), (parent.location[0]+offset[0], parent.location[1]+offset[1]), size)
@@ -574,7 +570,6 @@ class ShopMoney(ShopEntity):
             ShopMoneyDrawable().draw2(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
             if i<self.parent.nowMoney:
                 ShopMoneyDrawable().draw(ctx, (self.location[0] + 98*i, self.location[1]), (98, 98))
-
 class ShopButton(ShopEntity):
     def __init__(self, parent, offset):
         super().__init__(parent, ShopButtonDrawable(), offset, (300, 88))

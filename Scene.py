@@ -115,7 +115,7 @@ class TitleScene(Scene):
         self.i = 0
         self.phase = 0
         self.ani = self.animate()
-        threading.Thread(target=self.thread).start()
+        threading.Thread(target=self.thread, daemon=True).start()
 
     def animate(self):
         self.playerImage = Object(self, Image('./res/image/idle/0.png'), (-100-700, 250), (800, 600))
@@ -129,8 +129,8 @@ class TitleScene(Scene):
         yield None
         self.playerImage.location = (-100, 250)
         self.titleImage.location = (850,80)
-        host = threading.Thread(target=self.host).start
-        join = threading.Thread(target=self.join).start
+        host = threading.Thread(target=self.host, daemon=True).start
+        join = threading.Thread(target=self.join, daemon=True).start
         self.hostButton = TitleButton(self, "HOST", host, (1320+600, 550))
         self.addObject(self.hostButton)
         self.joinButton = TitleButton(self, "JOIN", join, (1320+600, 650))
@@ -182,6 +182,7 @@ class TitleScene(Scene):
 
     def host(self):
         self.hostButton.text = "WAITING"
+        self.hostButton.callback = None
         sock = Socket.Server()
         print('i am server')
         self.sock = sock
@@ -192,6 +193,7 @@ class TitleScene(Scene):
     
     def join(self):
         self.joinButton.text = "WAITING"
+        self.joinButton.callback = None
         sock = Socket.Client()
         print('i am client')
         self.sock = sock
@@ -254,7 +256,7 @@ class MainScene(Scene):
         self.shop.maxMoney += 1 if self.shop.maxMoney<10 else 0
         if Scene.game.debug: self.shop.maxMoney = 100
         self.shop.nowMoney = self.shop.maxMoney
-        thread = threading.Thread(target=self.shoppingThread, args=())
+        thread = threading.Thread(target=self.shoppingThread, args=(), daemon=True)
         thread.start()
 
     # @thread
@@ -316,12 +318,12 @@ class MainScene(Scene):
             player.shield += val
         try:
             exec(text, globals(), locals())
-        except SyntaxError:
+        except:
             player.setHealth(player.health - 10, False)
         player.nowTurn = False
 
     def startBattle(self, first):
-        thread = threading.Thread(target=self.battle, args=([first]))
+        thread = threading.Thread(target=self.battle, args=([first]), daemon=True)
         thread.start()
 
     # @thread
