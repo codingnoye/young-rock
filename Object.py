@@ -76,9 +76,10 @@ class IntroNaration(Object):
         super().__init__(scene, None, location, size)
         self.text = text
         self.alpha = 0
+        self.fontSize = 36
     
     def draw(self, ctx):
-        CenterText(self.text, QFont('Noto Serif', 32), QColor(255, 255, 255, alpha=self.alpha)).draw(ctx, (self.location[0], self.location[1]), self.size)
+        CenterText(self.text, QFont('Noto Serif', self.fontSize), QColor(255, 255, 255, alpha=self.alpha)).draw(ctx, (self.location[0], self.location[1]), self.size)
 
 class TitleButton(Button):
     def __init__(self, scene, text, callback, location):

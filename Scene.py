@@ -52,6 +52,7 @@ class IntroScene(Scene):
         n0 = IntroNaration(self, '영원한 젊음을 가져다 준다는 돌', (620, 500))
         self.addObject(n0)
         n1 = IntroNaration(self, 'Young Rock', (620, 500))
+        n1.fontSize = 84
         self.addObject(n1)
         n2 = IntroNaration(self, '그 돌을 찾기 위해 온', (620, 500))
         self.addObject(n2)
@@ -63,7 +64,7 @@ class IntroScene(Scene):
     def draw(self, ctx):
         super().draw(ctx)
         n0, n1, n2, n3 = self.naration
-        timing = (30, 60, 90, 60, 60, 90, 60, 60, 90, 60, 60, 110, 90)
+        timing = (300, 60, 90, 60, 60, 90, 60, 60, 90, 60, 60, 110, 90)
         now = 0
         if self.frame<sum(timing[:1]):
             pass
