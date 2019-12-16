@@ -1,7 +1,6 @@
 from PyQt5.QtGui import QPainter, QFont, QColor, QPixmap, QPen, QBrush
 from PyQt5.QtCore import Qt, QRect, QPoint, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
-from PyQt5.QtMultimedia import QAudio, QAudioDeviceInfo, QAudioFormat, QAudioOutput, QSound, QSoundEffect
 import threading, time, sys
 
 from Scene import * # 게임의 각 화면을 구성하는 Scene
